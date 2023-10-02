@@ -4,8 +4,7 @@
 Built on three **Docker** containers:
 
 ### Frontend (Typescript)
-Webserver: Caddy 2
-Proxy: NGINX
+Webserver and Reverse Proxy: Caddy 2
 UI Framework: React.js
 
 ### Backend (Python)
