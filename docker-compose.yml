@@ -1,0 +1,30 @@
+version: '3.9'
+
+services:
+
+  backend:
+    build: ./backend
+    ports:
+      - "8080:8080"
+    command: ['python', 'main.py']
+    volumes:
+      - ./backend:/app
+
+  frontend:
+    build: ./frontend
+    ports:
+      - "80:80"
+    volumes:
+      - ./frontend:/app
+      - ./Caddyfile:/etc/caddy/Caddyfile
+      - caddy-data:/data
+      - caddy-config:/config
+    depends_on:
+      - backend
+  
+  database:
+    image: postgres
+
+volumes:
+  caddy-data:
+  caddy-config:
