@@ -1,3 +1,4 @@
+import logo from './logo.svg';
 import React, { useEffect, useState } from 'react';
 import './App.css';
 import { Calendar, momentLocalizer } from 'react-big-calendar';
