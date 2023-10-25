@@ -72,7 +72,7 @@ function App() {
         defaultView="month" 
         style={{ height: "100vh" }} 
       />
-      <button onClick={toggleModal}>Add Event</button>
+      <button className="addButton" onClick={toggleModal}>Add Event +</button>
 
       {showModal && (
         <div className="modal">
