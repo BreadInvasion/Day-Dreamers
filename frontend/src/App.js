@@ -32,6 +32,7 @@ function App() {
       });
   }, []);
 
+  
   const handleAddEvent = () => {
     const newEvent = {
       start: moment(startTime).unix(),
@@ -78,10 +79,24 @@ function App() {
         <div className="modal">
           <div className="modal-content">
             <span className="close" onClick={toggleModal}>&times;</span>
-            <input value={title} onChange={e => setTitle(e.target.value)} placeholder="Title" />
-            <input value={description} onChange={e => setDescription(e.target.value)} placeholder="Description" />
-            <input type="datetime-local" value={startTime} onChange={e => setStartTime(e.target.value)} />
-            <input type="datetime-local" value={endTime} onChange={e => setEndTime(e.target.value)} />
+
+            <h2>Add Event</h2>
+            <div className="input-group">
+              <label htmlFor="eventTitle">Title</label>
+              <input id="eventTitle" value={title} onChange={e => setTitle(e.target.value)} placeholder="Title"/>
+            </div>
+            <div className="input-group">
+              <label htmlFor="eventDescription">Description</label>
+              <input id="eventDescription" value={description} onChange={e => setDescription(e.target.value)} placeholder="Description"/>
+            </div>
+            <div className="input-group">
+              <label htmlFor="startTime">Start Time</label>
+              <input id="startTime" type="datetime-local" value={startTime} onChange={e => setStartTime(e.target.value)}/>
+            </div>
+            <div className="input-group">
+              <label htmlFor="endTime">End Time</label>
+              <input id="endTime" type="datetime-local" value={endTime} onChange={e => setEndTime(e.target.value)}/>
+            </div>
             <button onClick={handleAddEvent}>Save Event</button>
           </div>
         </div>

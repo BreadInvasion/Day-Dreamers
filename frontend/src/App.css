@@ -86,3 +86,13 @@
 .rbc-calendar {
   margin-right: 150px;
 }
+
+.modal-content h2 {
+  font-size: 1em;  
+}
+
+.input-group {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 1em;
+}
