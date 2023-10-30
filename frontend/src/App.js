@@ -33,6 +33,7 @@ function App() {
             title: event.title
           }));
           setEvents(formattedEvents);
+        });
   };
 
   const onEventDrop = ({ event, start, end }) => {
