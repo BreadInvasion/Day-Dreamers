@@ -154,12 +154,10 @@ function App() {
 // Drag create
   const handleSelectSlot = (slotInfo) => {
     if (slotInfo.action === 'click') {
-      // 这是通过单击选择的，不做任何操作
       return;
     }
 
     if (slotInfo.action === 'select') {
-      // 这是通过拖拽选择的，你可以在这里创建事件
       const newEvent = {
         start: moment(slotInfo.start).unix(),
         end: moment(slotInfo.end).unix(),
