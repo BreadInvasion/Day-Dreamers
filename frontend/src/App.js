@@ -154,7 +154,7 @@ function App() {
 // Drag create
   const handleSelectSlot = ({ start, end }) => {
     // only create for slot > 3o minutes
-    if (moment(end).diff(moment(start), 'minutes') >= 30) {
+    if (moment(end).diff(moment(start), 'minutes') > 30) {
       const newEvent = {
         start: moment(start).unix(),
         end: moment(end).unix(),
