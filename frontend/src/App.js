@@ -14,6 +14,7 @@ function App() {
   const [startTime, setStartTime] = useState('');
   const [endTime, setEndTime] = useState('');
   const [showModal, setShowModal] = useState(false);
+  const [selectedEvent, setSelectedEvent] = useState(null);
 
   const toggleModal = () => {
     setShowModal(prev => !prev);
@@ -64,6 +65,32 @@ function App() {
     toggleModal();
   }
 
+
+  const handleSelectEvent = (event) => {
+    setSelectedEvent(event);
+  }
+
+  const handleDeleteEvent = () => {
+    if (selectedEvent) {
+      const eventIndex = events.findIndex(e => e.start === selectedEvent.start && e.end === selectedEvent.end && e.title === selectedEvent.title);
+      if (eventIndex > -1) {
+        fetch(`${BACKEND_URL}/api/${eventIndex}`, {
+          method: "DELETE"
+        })
+        .then(response => {
+          if (response.ok) {
+            setEvents(prevEvents => prevEvents.filter((_, index) => index !== eventIndex));
+            setSelectedEvent(null);
+          } else {
+            console.error('Failed to delete the event');
+          }
+        })
+        .catch(error => console.error('Network error:', error));
+      }
+    }
+  }
+
+
   return (
     <div>
       <Calendar 
@@ -71,15 +98,18 @@ function App() {
         events={events} 
         defaultDate={new Date()} 
         defaultView="month" 
-        style={{ height: "100vh" }} 
+        style={{ height: "100vh" }}
+        selectable
+        onSelectEvent={handleSelectEvent}
       />
       <button className="addButton" onClick={toggleModal}>Add Event +</button>
-
+      {selectedEvent && (
+        <button className="deleteButton" onClick={handleDeleteEvent}>Delete Event</button>
+      )}
       {showModal && (
         <div className="modal">
           <div className="modal-content">
             <span className="close" onClick={toggleModal}>&times;</span>
-
             <h2>Add Event</h2>
             <div className="input-group">
               <label htmlFor="eventTitle">Title</label>

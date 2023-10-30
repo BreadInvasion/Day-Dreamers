@@ -96,3 +96,21 @@
   flex-direction: column;
   margin-bottom: 1em;
 }
+
+.deleteButton {
+  margin-top: 40px;
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  padding: 10px 20px;
+  background-color: #dc3545;
+  color: #ffffff;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.deleteButton:hover {
+  background-color: #c82333;
+}
