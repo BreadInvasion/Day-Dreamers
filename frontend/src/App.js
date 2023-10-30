@@ -152,14 +152,19 @@ function App() {
 
 
 // Drag create
-  const handleSelectSlot = ({ start, end }) => {
-    // only create for slot > 3o minutes
-    if (moment(end).diff(moment(start), 'minutes') > 30) {
+  const handleSelectSlot = (slotInfo) => {
+    if (slotInfo.action === 'click') {
+      // 这是通过单击选择的，不做任何操作
+      return;
+    }
+
+    if (slotInfo.action === 'select') {
+      // 这是通过拖拽选择的，你可以在这里创建事件
       const newEvent = {
-        start: moment(start).unix(),
-        end: moment(end).unix(),
+        start: moment(slotInfo.start).unix(),
+        end: moment(slotInfo.end).unix(),
         title: "",
-        description: ""
+        description: "New Event Description"
       };
 
       fetch(`${BACKEND_URL}/api`, {
@@ -179,7 +184,7 @@ function App() {
             fetchEvents();
           });
     }
-  }
+  };
 
   return (
       <div>
