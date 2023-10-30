@@ -42,6 +42,7 @@ function App() {
     const nextEvents = [...events];
     nextEvents.splice(idx, 1, updatedEvent);
     setEvents(nextEvents);
+    handleEventDrop(event, start, end);
   }
   const onEventResize = ({ event, start, end }) => {
     const idx = events.indexOf(event);
@@ -49,6 +50,7 @@ function App() {
     const nextEvents = [...events];
     nextEvents.splice(idx, 1, updatedEvent);
     setEvents(nextEvents);
+    handleEventResize(event, start, end);
   };
 
 
@@ -120,34 +122,64 @@ function App() {
       }
     }
   }
-
-
-  const handleSelectSlot = (slotInfo) => {
-    // slotInfo 包含 start 和 end 时间
-    const newEvent = {
-      start: moment(slotInfo.start).unix(),
-      end: moment(slotInfo.end).unix(),
-      title: "",  // 你可以通过弹出一个模态框来自定义这个标题
-      description: "Description"  // 同上
-    };
-
-    fetch(`${BACKEND_URL}/api`, {
-      method: "POST",
+  const handleEventDrop = (event, start, end) => {
+    const idx = events.indexOf(event);
+    fetch(`${BACKEND_URL}/api/${idx}`, {
+      method: "PUT",
       headers: {
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify(newEvent)
+      body: JSON.stringify({
+        start: moment(start).unix(),
+        end: moment(end).unix(),
+        title: event.title,
+        description: event.description
+      })
     })
-        .then(response => response.json())
-        .then(data => {
-          setEvents(prevEvents => [...prevEvents, {
-            start: moment.unix(data.start).toDate(),
-            end: moment.unix(data.end).toDate(),
-            title: data.title
-          }]);
-          fetchEvents();
-        });
-  };
+        .then(response => {
+          if (response.ok) {
+            fetchEvents();
+          } else {
+            console.error('Failed to update the event');
+          }
+        })
+        .catch(error => console.error('Network error:', error));
+  }
+
+  const handleEventResize = (event, start, end) => {
+    handleEventDrop(event, start, end);
+  }
+
+
+// Drag create
+  const handleSelectSlot = ({ start, end }) => {
+    // only create for slot > 3o minutes
+    if (moment(end).diff(moment(start), 'minutes') >= 30) {
+      const newEvent = {
+        start: moment(start).unix(),
+        end: moment(end).unix(),
+        title: "",
+        description: ""
+      };
+
+      fetch(`${BACKEND_URL}/api`, {
+        method: "POST",
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(newEvent)
+      })
+          .then(response => response.json())
+          .then(data => {
+            setEvents(prevEvents => [...prevEvents, {
+              start: moment.unix(data.start).toDate(),
+              end: moment.unix(data.end).toDate(),
+              title: data.title
+            }]);
+            fetchEvents();
+          });
+    }
+  }
 
   return (
       <div>
@@ -157,7 +189,7 @@ function App() {
             defaultDate={new Date()}
             defaultView="week"
             style={{ height: "100vh" }}
-            selectable
+            selectable={'ignoreEvents'}
             onEventDrop={onEventDrop}
             onEventResize={onEventResize}
             resizable
