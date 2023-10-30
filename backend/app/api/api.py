@@ -3,6 +3,7 @@ from fastapi import FastAPI
 from fastapi import HTTPException
 from pydantic import BaseModel
 from fastapi.middleware.cors import CORSMiddleware
+from uuid import uuid4
 
 app = FastAPI()
 

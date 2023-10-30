@@ -19,6 +19,22 @@ function App() {
   const [endTime, setEndTime] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState(null);
+
+
+
+  // Helper function to update the data
+  const fetchEvents = () => {
+    fetch(`${BACKEND_URL}/api`, { method: "GET" })
+        .then(response => response.json())
+        .then(data => {
+          const formattedEvents = data.map(event => ({
+            start: moment.unix(event.start).toDate(),
+            end: moment.unix(event.end).toDate(),
+            title: event.title
+          }));
+          setEvents(formattedEvents);
+  };
+
   const onEventDrop = ({ event, start, end }) => {
     const idx = events.indexOf(event);
     const updatedEvent = {...event, start, end};
@@ -39,17 +55,10 @@ function App() {
     setShowModal(prev => !prev);
   }
 
+
+
   useEffect(() => {
-    fetch(`${BACKEND_URL}/api`, { method: "GET" })
-      .then(response => response.json())
-      .then(data => {
-        const formattedEvents = data.map(event => ({
-          start: moment.unix(event.start).toDate(),
-          end: moment.unix(event.end).toDate(),
-          title: event.title
-        }));
-        setEvents(formattedEvents);
-      });
+    fetchEvents();
   }, []);
 
 
@@ -70,11 +79,13 @@ function App() {
     })
     .then(response => response.json())
     .then(data => {
+
       setEvents(prevEvents => [...prevEvents, {
         start: moment.unix(data.start).toDate(),
         end: moment.unix(data.end).toDate(),
         title: data.title
       }]);
+      fetchEvents();
     });
 
     setTitle('');
@@ -110,19 +121,47 @@ function App() {
   }
 
 
+  const handleSelectSlot = (slotInfo) => {
+    // slotInfo 包含 start 和 end 时间
+    const newEvent = {
+      start: moment(slotInfo.start).unix(),
+      end: moment(slotInfo.end).unix(),
+      title: "",  // 你可以通过弹出一个模态框来自定义这个标题
+      description: "Description"  // 同上
+    };
+
+    fetch(`${BACKEND_URL}/api`, {
+      method: "POST",
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(newEvent)
+    })
+        .then(response => response.json())
+        .then(data => {
+          setEvents(prevEvents => [...prevEvents, {
+            start: moment.unix(data.start).toDate(),
+            end: moment.unix(data.end).toDate(),
+            title: data.title
+          }]);
+          fetchEvents();
+        });
+  };
+
   return (
       <div>
         <DnDCalendar
             localizer={localizer}
             events={events}
             defaultDate={new Date()}
-            defaultView="month"
+            defaultView="week"
             style={{ height: "100vh" }}
             selectable
             onEventDrop={onEventDrop}
             onEventResize={onEventResize}
             resizable
             onSelectEvent={handleSelectEvent}
+            onSelectSlot={handleSelectSlot}
         />
       <button className="addButton" onClick={toggleModal}>Add Event +</button>
       {selectedEvent && (
