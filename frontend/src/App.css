@@ -77,10 +77,9 @@
   border-radius: 4px;
   cursor: pointer;
   transition: background-color 0.3s;
-
-  &:hover {
-    background-color: #0056b3;
-  }
+}
+.addButton:hover {
+  background-color: #0056b3;
 }
 
 .rbc-calendar {
@@ -88,7 +87,7 @@
 }
 
 .modal-content h2 {
-  font-size: 1em;  
+  font-size: 1em;
 }
 
 .input-group {
@@ -113,4 +112,9 @@
 
 .deleteButton:hover {
   background-color: #c82333;
+}
+
+
+.rbc-addons-dnd-draggable {
+  cursor: move;
 }

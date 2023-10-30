@@ -3,9 +3,13 @@ import React, { useEffect, useState } from 'react';
 import './App.css';
 import { Calendar, momentLocalizer } from 'react-big-calendar';
 import moment from 'moment';
+import withDragAndDrop from 'react-big-calendar/lib/addons/dragAndDrop';
+import 'react-big-calendar/lib/addons/dragAndDrop/styles.css';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 
 const BACKEND_URL = 'http://localhost:8080';
+const localizer = momentLocalizer(moment);
+const DnDCalendar = withDragAndDrop(Calendar);
 
 function App() {
   const [events, setEvents] = useState([]);
@@ -15,6 +19,21 @@ function App() {
   const [endTime, setEndTime] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState(null);
+  const onEventDrop = ({ event, start, end }) => {
+    const idx = events.indexOf(event);
+    const updatedEvent = {...event, start, end};
+    const nextEvents = [...events];
+    nextEvents.splice(idx, 1, updatedEvent);
+    setEvents(nextEvents);
+  }
+  const onEventResize = ({ event, start, end }) => {
+    const idx = events.indexOf(event);
+    const updatedEvent = { ...event, start, end };
+    const nextEvents = [...events];
+    nextEvents.splice(idx, 1, updatedEvent);
+    setEvents(nextEvents);
+  };
+
 
   const toggleModal = () => {
     setShowModal(prev => !prev);
@@ -33,7 +52,7 @@ function App() {
       });
   }, []);
 
-  
+
   const handleAddEvent = () => {
     const newEvent = {
       start: moment(startTime).unix(),
@@ -92,16 +111,19 @@ function App() {
 
 
   return (
-    <div>
-      <Calendar 
-        localizer={momentLocalizer(moment)} 
-        events={events} 
-        defaultDate={new Date()} 
-        defaultView="month" 
-        style={{ height: "100vh" }}
-        selectable
-        onSelectEvent={handleSelectEvent}
-      />
+      <div>
+        <DnDCalendar
+            localizer={localizer}
+            events={events}
+            defaultDate={new Date()}
+            defaultView="month"
+            style={{ height: "100vh" }}
+            selectable
+            onEventDrop={onEventDrop}
+            onEventResize={onEventResize}
+            resizable
+            onSelectEvent={handleSelectEvent}
+        />
       <button className="addButton" onClick={toggleModal}>Add Event +</button>
       {selectedEvent && (
         <button className="deleteButton" onClick={handleDeleteEvent}>Delete Event</button>

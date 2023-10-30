@@ -33,6 +33,14 @@ def add_event(event: Event):
     events_data.append(event.dict())
     return event
 
+@app.put("/api/{event_id}")
+def update_event(event_id: int, event: Event):
+    try:
+        events_data[event_id] = event.dict()
+    except IndexError:
+        raise HTTPException(status_code=404, detail="Event not found")
+    return {"status": "success"}
+
 @app.delete("/api/{event_id}")
 def delete_event(event_id: int):
     try:
