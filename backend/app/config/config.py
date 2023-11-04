@@ -1,9 +1,12 @@
 import os
 
-from pydantic import BaseSettings, Field
+from pydantic import Field
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
-    db_url: str = Field(..., env='DATABASE_URL')
+    db_url: str
+    pass_key: str
+
 
 settings = Settings()

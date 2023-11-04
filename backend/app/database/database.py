@@ -1,4 +1,4 @@
-from app.config.config import settings
+from config.config import settings
 from sqlalchemy import (
     create_engine,
     ForeignKey,
@@ -38,7 +38,9 @@ class User(Base):
     __tablename__ = "users"
 
     id: Mapped[uuid.UUID] = mapped_column(UUIDC, primary_key=True, default=uuid.uuid4)
+    username: Mapped[str] = mapped_column(String(20), nullable=False)
     email: Mapped[str] = mapped_column(String(254), nullable=False)
+    password_hash: Mapped[str] = mapped_column(String, nullable=False)
     owned_events: Mapped[List["Event"]] = relationship(back_populates="owner")
     attending_events: Mapped[List["Event"]] = relationship(
         secondary=user_event_association, back_populates="attendees"
@@ -54,6 +56,7 @@ class Event(Base):
     start: Mapped[int] = mapped_column(nullable=False)
     end: Mapped[int] = mapped_column(nullable=False)
     owner: Mapped[User] = relationship(back_populates="owned_events")
+    owner_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"))
     attendees: Mapped[List[User]] = relationship(
         secondary=user_event_association,
         back_populates="attending_events",
