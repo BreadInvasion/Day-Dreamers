@@ -7,10 +7,40 @@ import withDragAndDrop from 'react-big-calendar/lib/addons/dragAndDrop';
 import 'react-big-calendar/lib/addons/dragAndDrop/styles.css';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 
+
 const BACKEND_URL = 'http://localhost:8080';
 const localizer = momentLocalizer(moment);
 const DnDCalendar = withDragAndDrop(Calendar);
 
+
+
+
+// Modal component for creating a new user
+  function CreateUserModal({ onSubmit }) {
+    const [username, setUsername] = useState('');
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
+
+    return (
+        <div className="modal">
+          {/* Form elements and submit button */}
+          <button onClick={() => onSubmit(username, email, password)}>Submit</button>
+        </div>
+    );
+  }
+
+// Modal component for logging in
+  function LoginModal({ onSubmit }) {
+    const [username, setUsername] = useState('');
+    const [password, setPassword] = useState('');
+
+    return (
+        <div className="modal">
+          {/* Form elements and submit button */}
+          <button onClick={() => onSubmit(username, password)}>Submit</button>
+        </div>
+    );
+  }
 function App() {
   const [events, setEvents] = useState([]);
   const [title, setTitle] = useState('');
@@ -19,7 +49,8 @@ function App() {
   const [endTime, setEndTime] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState(null);
-
+  const [showCreateUserModal, setShowCreateUserModal] = useState(false);
+  const [showLoginModal, setShowLoginModal] = useState(false);
 
 
   // Helper function to update the data
@@ -181,8 +212,168 @@ function App() {
     }
   }
 
+  const handleUserCreated = (userData) => {
+    fetch(`${BACKEND_URL}/create-user`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(userData),
+    })
+        .then(response => response.json())
+        .then(data => console.log(data))
+        .catch(error => console.error('Error:', error));
+  };
+
+  const handleLoggedIn = (loginData) => {
+    fetch(`${BACKEND_URL}/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(loginData),
+    })
+        .then(response => response.json())
+        .then(data => console.log(data))
+        .catch(error => console.error('Error:', error));
+  };
+
+  const handleLoggedOut = () => {
+    fetch(`${BACKEND_URL}/logout`, { method: 'POST' })
+        .then(response => {
+          if (response.ok) console.log('Logged out successfully');
+        })
+        .catch(error => console.error('Error:', error));
+  };
+
+  const handleCreateUser = (username, email, password) => {
+    fetch(`${BACKEND_URL}/api/users`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ username, email, password }),
+    })
+        .then(response => {
+          if (response.ok) {
+            return response.json();
+          }
+          throw new Error('Network response was not ok.');
+        })
+        .then(data => {
+          console.log('User created:', data);
+          setShowCreateUserModal(false);
+        })
+        .catch(error => {
+          console.error('There has been a problem with your fetch operation:', error);
+        });
+  };
+
+  // Function to handle user login
+  const handleLogin = (username, password) => {
+    fetch(`${BACKEND_URL}/api/login`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ username, password }),
+      credentials: 'include',
+    })
+        .then(response => {
+          if (response.ok) {
+            return response.json();
+          }
+          throw new Error('Network response was not ok.');
+        })
+        .then(data => {
+          console.log('Login successful:', data);
+          setShowLoginModal(false);
+        })
+        .catch(error => {
+          console.error('There has been a problem with your fetch operation:', error);
+        });
+  };
+
+  // Function to handle user logout
+  const handleLogout = () => {
+    fetch(`${BACKEND_URL}/api/logout`, {
+      method: 'POST',
+      credentials: 'include',
+    })
+        .then(response => {
+          if (response.ok) {
+            console.log('Logout successful');
+          } else {
+            throw new Error('Network response was not ok.');
+          }
+        })
+        .catch(error => {
+          console.error('There has been a problem with your fetch operation:', error);
+        });
+  };
+
+
   return (
+
       <div>
+        {/*User Login component*/}
+        <button onClick={() => setShowCreateUserModal(true)}>Create New User</button>
+        <button onClick={() => setShowLoginModal(true)}>Login</button>
+        <button onClick={handleLogout}>Logout</button>
+
+        {/* Modal for creating a new user */}
+        {showCreateUserModal && (
+            <div className="modal">
+              <div className="modal-content">
+                <span className="close" onClick={() => setShowCreateUserModal(false)}>&times;</span>
+                <h2>Create New User</h2>
+                <form onSubmit={(e) => {
+                  e.preventDefault();
+                  const username = e.target.username.value;
+                  const email = e.target.email.value;
+                  const password = e.target.password.value;
+                  handleCreateUser(username, email, password);
+                }}>
+                  <div className="input-group">
+                    <label htmlFor="username">Username:</label>
+                    <input id="username" type="text" name="username" required />
+                  </div>
+                  <div className="input-group">
+                    <label htmlFor="email">Email:</label>
+                    <input id="email" type="email" name="email" required />
+                  </div>
+                  <div className="input-group">
+                    <label htmlFor="password">Password:</label>
+                    <input id="password" type="password" name="password" required />
+                  </div>
+                  <button type="submit">Create User</button>
+                </form>
+              </div>
+            </div>
+        )}
+
+        {/* Modal for logging in */}
+        {showLoginModal && (
+            <div className="modal">
+              <div className="modal-content">
+                <span className="close" onClick={() => setShowLoginModal(false)}>&times;</span>
+                <h2>Login</h2>
+                <form onSubmit={(e) => {
+                  e.preventDefault();
+                  const username = e.target.username.value;
+                  const password = e.target.password.value;
+                  handleLogin(username, password);
+                }}>
+                  <div className="input-group">
+                    <label htmlFor="username">Username:</label>
+                    <input id="username" type="text" name="username" required />
+                  </div>
+                  <div className="input-group">
+                    <label htmlFor="password">Password:</label>
+                    <input id="password" type="password" name="password" required />
+                  </div>
+                  <button type="submit">Login</button>
+                </form>
+              </div>
+            </div>
+        )}
+        {/*  Calendar and Event Component*/}
         <DnDCalendar
             localizer={localizer}
             events={events}
