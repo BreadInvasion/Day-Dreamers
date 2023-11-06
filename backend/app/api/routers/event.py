@@ -31,19 +31,20 @@ class CleanEvent(BaseModel):
 
 
 @router.get("/event")
-def get_events(current_user: Annotated[UserData, Depends(get_current_user)]) -> List[CleanEvent]:
+def get_events(
+    current_user: Annotated[UserData, Depends(get_current_user)]
+) -> List[CleanEvent]:
     session: Session
     with DBSession() as session:
-        user = session.scalar(select(User).where(User.id == current_user.id))
-
-        event_list: Set[Event] = set(
-            session.scalars(
-                select(Event)
-                .where(or_(Event.owner_id == current_user.id, Event.attendees.contains(user)))
-                .options(lazyload(Event.attendees))
-                .options(lazyload(Event.owner))
-            ).all()
+        user = session.scalar(
+            select(User)
+            .where(User.id == current_user.id)
+            .options(lazyload(User.attending_events))
+            .options(lazyload(User.owned_events))
         )
+
+        event_list = user.owned_events + user.attending_events
+
         return [
             CleanEvent(
                 id=event.id,
@@ -93,7 +94,9 @@ class EditInfo(BaseModel):
 def edit_event(
     edit_info: EditInfo, current_user: Annotated[UserData, Depends(get_current_user)]
 ) -> SuccessResponse:
-    args_pruned = {key: value for key, value in edit_info.__dict__.items() if value is not None}
+    args_pruned = {
+        key: value for key, value in edit_info.__dict__.items() if value is not None
+    }
 
     session: Session
     with DBSession() as session:
@@ -119,10 +122,15 @@ def remove_attendee(
         )
 
         if event:
-            if event.owner_id != current_user.id and removing_attendee != current_user.id:
+            if (
+                event.owner_id != current_user.id
+                and removing_attendee != current_user.id
+            ):
                 raise EventNotOwnedException
             event.attendees = [
-                attendee for attendee in event.attendees if attendee.id != removing_attendee
+                attendee
+                for attendee in event.attendees
+                if attendee.id != removing_attendee
             ]
             session.commit()
             return {"status": "success"}
@@ -157,7 +165,9 @@ def add_attendee(
 
 
 @router.post("/event/delete")
-def delete_event(event_id: UUID, current_user: Annotated[UserData, Depends(get_current_user)]):
+def delete_event(
+    event_id: UUID, current_user: Annotated[UserData, Depends(get_current_user)]
+):
     session: Session
     with DBSession() as session:
         event = session.get(Event, event_id)
