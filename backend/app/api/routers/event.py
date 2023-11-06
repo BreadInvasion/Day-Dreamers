@@ -20,14 +20,19 @@ class NewEvent(BaseModel):
     end: int
 
 
+class UserInfo(BaseModel):
+    username: str
+    id: UUID
+
+
 class CleanEvent(BaseModel):
     id: UUID
     title: str
     description: str
     start: int
     end: int
-    owner: UUID
-    attendees: List[UUID]
+    owner: UserInfo
+    attendees: List[UserInfo]
 
 
 @router.get("/event")
@@ -41,6 +46,7 @@ def get_events(current_user: Annotated[User, Depends(get_current_user)]) -> List
                     or_(Event.owner_id == current_user.id, Event.attendees.contains(current_user))
                 )
                 .options(lazyload(Event.attendees))
+                .options(lazyload(Event.owner))
             ).all()
         )
         return [
@@ -50,8 +56,11 @@ def get_events(current_user: Annotated[User, Depends(get_current_user)]) -> List
                 description=event.description,
                 start=event.start,
                 end=event.end,
-                owner=event.owner_id,
-                attendees=[attendee.id for attendee in event.attendees],
+                owner=UserInfo(id=event.owner_id, username=event.owner.username),
+                attendees=[
+                    UserInfo(id=attendee.id, username=attendee.username)
+                    for attendee in event.attendees
+                ],
             )
             for event in event_list
         ]
