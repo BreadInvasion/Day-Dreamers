@@ -43,17 +43,22 @@ def authenticate_user(username: str, password: str) -> UserData:
         user = session.scalar(select(User).where(User.username == username))
         if not user or not validate(password, user.password_hash):
             raise HTTPException(
-                status_code=status.HTTP_401_FORBIDDEN,
+                status_code=status.HTTP_403_FORBIDDEN,
                 detail="Username or password is incorrect",
                 headers={"WWW-Authenticate": "Bearer"},
             )
         return UserData(
-            id=user.id, username=user.username, password_hash=user.password_hash, email=user.email
+            id=user.id,
+            username=user.username,
+            password_hash=user.password_hash,
+            email=user.email,
         )
 
 
 def create_access_token(data: dict, expires_delta: timedelta | None = None) -> str:
-    expires = datetime.utcnow() + (expires_delta if expires_delta else timedelta(minutes=15))
+    expires = datetime.utcnow() + (
+        expires_delta if expires_delta else timedelta(minutes=15)
+    )
     to_encode = data | {"exp": expires}
     encoded_jwt = jwt.encode(to_encode, settings.pass_key, algorithm="HS256")
     return encoded_jwt
@@ -75,5 +80,8 @@ def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]) -> UserData:
         if user is None:
             raise CredentialsException
         return UserData(
-            id=user.id, username=user.username, password_hash=user.password_hash, email=user.email
+            id=user.id,
+            username=user.username,
+            password_hash=user.password_hash,
+            email=user.email,
         )
