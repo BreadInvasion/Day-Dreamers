@@ -106,10 +106,11 @@ function App() {
       description: description
     };
 
-    fetch(`${BACKEND_URL}/api`, {
+    fetch("/api/event/new", {
       method: "POST",
       headers: {
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        'Authorization': "Bearer " + localStorage.getItem("daydreamers-access-token")
       },
       body: JSON.stringify(newEvent)
     })
@@ -139,9 +140,12 @@ function App() {
   const handleDeleteEvent = () => {
     if (selectedEvent) {
       const eventIndex = events.findIndex(e => e.start === selectedEvent.start && e.end === selectedEvent.end && e.title === selectedEvent.title);
-      if (eventIndex > -1) {
-        fetch(`${BACKEND_URL}/api/${eventIndex}`, {
-          method: "DELETE"
+      if (selectedEvent) {
+        fetch(`/api/event/${selectedEvent.id}`, {
+          method: "DELETE",
+          headers: {
+            'Authorization': "Bearer " + localStorage.getItem("daydreamers-access-token")
+          }
         })
         .then(response => {
           if (response.ok) {
@@ -157,10 +161,11 @@ function App() {
   }
   const handleEventDrop = (event, start, end) => {
     const idx = events.indexOf(event);
-    fetch(`${BACKEND_URL}/api/${idx}`, {
+    fetch(`/api/event/${event.id}`, {
       method: "PUT",
       headers: {
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        'Authorization': "Bearer " + localStorage.getItem("daydreamers-access-token")
       },
       body: JSON.stringify({
         start: moment(start).unix(),
@@ -214,101 +219,87 @@ function App() {
     }
   }
 
-  const handleUserCreated = (userData) => {
-    fetch(`${BACKEND_URL}/create-user`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(userData),
-    })
-        .then(response => response.json())
-        .then(data => console.log(data))
-        .catch(error => console.error('Error:', error));
-  };
-
-  const handleLoggedIn = (loginData) => {
-    fetch(`${BACKEND_URL}/login`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(loginData),
-    })
-        .then(response => response.json())
-        .then(data => console.log(data))
-        .catch(error => console.error('Error:', error));
-  };
-
-  const handleLoggedOut = () => {
-    fetch(`${BACKEND_URL}/logout`, { method: 'POST' })
-        .then(response => {
-          if (response.ok) console.log('Logged out successfully');
-        })
-        .catch(error => console.error('Error:', error));
-  };
-
-  const handleCreateUser = (username, email, password) => {
-    fetch(`${BACKEND_URL}/api/users`, {
+  const handleCreateUser = (event) => {
+    event.preventDefault();
+    const formData = new FormData(event.target);
+    const username = formData.get('username');
+    const email = formData.get('email');
+    const password = formData.get('password');
+  
+    fetch(`/api/user/new`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({ username, email, password }),
     })
-        .then(response => {
-          if (response.ok) {
-            return response.json();
-          }
-          throw new Error('Network response was not ok.');
-        })
-        .then(data => {
-          console.log('User created:', data);
-          setShowCreateUserModal(false);
-        })
-        .catch(error => {
-          console.error('There has been a problem with your fetch operation:', error);
-        });
+    .then(response => {
+      if (response.ok) {
+        return response.json();
+      }
+      throw new Error('Network response was not ok.');
+    })
+    .then(data => {
+      console.log('User created:', data);
+      setShowCreateUserModal(false);
+    })
+    .catch(error => {
+      console.error('There has been a problem with your fetch operation:', error);
+    });
   };
 
   // Function to handle user login
   const handleLogin = (username, password) => {
-    fetch(`${BACKEND_URL}/api/login`, {
+    const formData = new URLSearchParams();
+    formData.append('username', username);
+    formData.append('password', password);
+  
+    fetch(`/api/token`, {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json',
+        'Content-Type': 'application/x-www-form-urlencoded', 
       },
-      body: JSON.stringify({ username, password }),
-      credentials: 'include',
+      body: formData.toString(),
     })
-        .then(response => {
-          if (response.ok) {
-            return response.json();
-          }
-          throw new Error('Network response was not ok.');
-        })
-        .then(data => {
-          console.log('Login successful:', data);
-          setShowLoginModal(false);
-        })
-        .catch(error => {
-          console.error('There has been a problem with your fetch operation:', error);
-        });
+    .then(response => {
+      if (response.ok) {
+        return response.json();
+      }
+      return response.json().then(json => {
+        throw new Error(json.detail || 'Network response was not ok.');
+      });
+    })
+    .then(data => {
+      console.log('Login successful:', data);
+      // Save the access token to local storage
+      localStorage.setItem("daydreamers-access-token", data.access_token);
+      setShowLoginModal(false);
+    })
+    .catch(error => {
+      console.error('There has been a problem with your fetch operation:', error);
+    });
   };
+  
+  
 
   // Function to handle user logout
   const handleLogout = () => {
-    fetch(`${BACKEND_URL}/api/logout`, {
+    fetch(`/api/logout`, { // Updated to use the proxy
       method: 'POST',
-      credentials: 'include',
     })
-        .then(response => {
-          if (response.ok) {
-            console.log('Logout successful');
-          } else {
-            throw new Error('Network response was not ok.');
-          }
-        })
-        .catch(error => {
-          console.error('There has been a problem with your fetch operation:', error);
-        });
+    .then(response => {
+      if (response.ok) {
+        console.log('Logout successful');
+        localStorage.removeItem("daydreamers-access-token"); // Clear the token from local storage
+      } else {
+        throw new Error('Network response was not ok.');
+      }
+    })
+    .catch(error => {
+      console.error('There has been a problem with your fetch operation:', error);
+    });
   };
+  
 
 
   return (
@@ -325,13 +316,7 @@ function App() {
               <div className="modal-content">
                 <span className="close" onClick={() => setShowCreateUserModal(false)}>&times;</span>
                 <h2>Create New User</h2>
-                <form onSubmit={(e) => {
-                  e.preventDefault();
-                  const username = e.target.username.value;
-                  const email = e.target.email.value;
-                  const password = e.target.password.value;
-                  handleCreateUser(username, email, password);
-                }}>
+                <form onSubmit={handleCreateUser}>
                   <div className="input-group">
                     <label htmlFor="username">Username:</label>
                     <input id="username" type="text" name="username" required />
