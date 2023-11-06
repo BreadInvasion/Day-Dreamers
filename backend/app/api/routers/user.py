@@ -1,8 +1,8 @@
 from typing import Annotated
 
-from api.models import SuccessResponse
 from database.database import DBSession, User
 from fastapi import APIRouter, Depends, HTTPException, status
+from models import SuccessResponse, UserData
 from pydantic import BaseModel, EmailStr, SecretStr
 from security.access import authenticate_user, get_current_user, get_hash
 from sqlalchemy import delete, select, update
@@ -23,7 +23,7 @@ class UserProfile(BaseModel):
 
 
 @router.post("/user/me")
-def get_profile(current_user: Annotated[User, get_current_user]) -> UserProfile:
+def get_profile(current_user: Annotated[UserData, Depends(get_current_user)]) -> UserProfile:
     return UserProfile(email=current_user.email, username=current_user.username)
 
 
@@ -58,7 +58,7 @@ def create_user(info: NewUserInfo) -> SuccessResponse:
 
 
 @router.post("/user/delete")
-def delete_user(current_user: Annotated[User, Depends(get_current_user)]) -> SuccessResponse:
+def delete_user(current_user: Annotated[UserData, Depends(get_current_user)]) -> SuccessResponse:
     session: Session
     with DBSession() as session:
         session.execute(delete(User).where(User.id == current_user.id))
@@ -90,7 +90,7 @@ def check_email_availability(email: EmailStr) -> bool:
 
 @router.post("/user/username/edit")
 def change_username(
-    new_username: str, current_user: Annotated[User, Depends(get_current_user)]
+    new_username: str, current_user: Annotated[UserData, Depends(get_current_user)]
 ) -> SuccessResponse:
     session: Session
     with DBSession() as session:
@@ -110,7 +110,7 @@ def change_username(
 
 @router.post("/user/email/edit")
 def change_email(
-    new_email: str, current_user: Annotated[User, Depends(get_current_user)]
+    new_email: str, current_user: Annotated[UserData, Depends(get_current_user)]
 ) -> SuccessResponse:
     session: Session
     with DBSession() as session:
@@ -129,7 +129,7 @@ def change_email(
 def change_password(
     new_password: SecretStr,
     old_password: SecretStr,
-    current_user: Annotated[User, Depends(get_current_user)],
+    current_user: Annotated[UserData, Depends(get_current_user)],
 ) -> SuccessResponse:
     authenticate_user(current_user.username, old_password.get_secret_value())
 

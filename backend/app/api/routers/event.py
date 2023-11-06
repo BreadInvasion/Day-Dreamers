@@ -2,9 +2,9 @@ from typing import Annotated, List, Set
 from uuid import UUID
 
 from api.exceptions import DoesNotExistException, EventNotOwnedException
-from api.models import SuccessResponse
 from database.database import DBSession, Event, User
 from fastapi import APIRouter, Depends, HTTPException, status
+from models import SuccessResponse, UserData, UserInfo
 from pydantic import BaseModel
 from security.access import get_current_user
 from sqlalchemy import or_, select
@@ -20,11 +20,6 @@ class NewEvent(BaseModel):
     end: int
 
 
-class UserInfo(BaseModel):
-    username: str
-    id: UUID
-
-
 class CleanEvent(BaseModel):
     id: UUID
     title: str
@@ -36,15 +31,15 @@ class CleanEvent(BaseModel):
 
 
 @router.get("/event")
-def get_events(current_user: Annotated[User, Depends(get_current_user)]) -> List[CleanEvent]:
+def get_events(current_user: Annotated[UserData, Depends(get_current_user)]) -> List[CleanEvent]:
     session: Session
     with DBSession() as session:
+        user = session.scalar(select(User).where(User.id == current_user.id))
+
         event_list: Set[Event] = set(
             session.scalars(
                 select(Event)
-                .where(
-                    or_(Event.owner_id == current_user.id, Event.attendees.contains(current_user))
-                )
+                .where(or_(Event.owner_id == current_user.id, Event.attendees.contains(user)))
                 .options(lazyload(Event.attendees))
                 .options(lazyload(Event.owner))
             ).all()
@@ -68,7 +63,7 @@ def get_events(current_user: Annotated[User, Depends(get_current_user)]) -> List
 
 @router.post("/event/new")
 def add_event(
-    event: NewEvent, current_user: Annotated[User, Depends(get_current_user)]
+    event: NewEvent, current_user: Annotated[UserData, Depends(get_current_user)]
 ) -> SuccessResponse:
     session: Session
     with DBSession() as session:
@@ -89,7 +84,7 @@ def add_event(
 def remove_attendee(
     event_id: UUID,
     removing_attendee: UUID,
-    current_user: Annotated[User, Depends(get_current_user)],
+    current_user: Annotated[UserData, Depends(get_current_user)],
 ):
     session: Session
     with DBSession() as session:
@@ -111,7 +106,9 @@ def remove_attendee(
 
 @router.post("/event/attendees/add")
 def add_attendee(
-    event_id: UUID, new_attendee: UUID, current_user: Annotated[User, Depends(get_current_user)]
+    event_id: UUID,
+    new_attendee: UUID,
+    current_user: Annotated[UserData, Depends(get_current_user)],
 ) -> SuccessResponse:
     session: Session
     with DBSession() as session:
@@ -134,7 +131,7 @@ def add_attendee(
 
 
 @router.post("/event/delete")
-def delete_event(event_id: UUID, current_user: Annotated[User, Depends(get_current_user)]):
+def delete_event(event_id: UUID, current_user: Annotated[UserData, Depends(get_current_user)]):
     session: Session
     with DBSession() as session:
         event = session.get(Event, event_id)

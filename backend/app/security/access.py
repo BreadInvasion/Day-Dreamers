@@ -6,6 +6,7 @@ from database.database import DBSession, User
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
+from models import UserData
 from passlib.context import CryptContext
 from pydantic import BaseModel
 from sqlalchemy import select
@@ -36,7 +37,7 @@ def get_hash(value: str) -> str:
     return hash_context.hash(value)
 
 
-def authenticate_user(username: str, password: str) -> User:
+def authenticate_user(username: str, password: str) -> UserData:
     session: Session
     with DBSession() as session:
         user = session.scalar(select(User).where(User.username == username))
@@ -46,7 +47,9 @@ def authenticate_user(username: str, password: str) -> User:
                 detail="Username or password is incorrect",
                 headers={"WWW-Authenticate": "Bearer"},
             )
-        return user
+        return UserData(
+            id=user.id, username=user.username, password_hash=user.password_hash, email=user.email
+        )
 
 
 def create_access_token(data: dict, expires_delta: timedelta | None = None) -> str:
@@ -56,7 +59,7 @@ def create_access_token(data: dict, expires_delta: timedelta | None = None) -> s
     return encoded_jwt
 
 
-def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]) -> User:
+def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]) -> UserData:
     user_id: str | None
     try:
         payload = jwt.decode(token, settings.pass_key, algorithms=["HS256"])
@@ -71,4 +74,6 @@ def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]) -> User:
         user = session.scalar(select(User).where(User.id == user_id))
         if user is None:
             raise CredentialsException
-        return user
+        return UserData(
+            id=user.id, username=user.username, password_hash=user.password_hash, email=user.email
+        )
