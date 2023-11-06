@@ -119,7 +119,7 @@ def remove_attendee(
         )
 
         if event:
-            if event.owner_id != current_user.id:
+            if event.owner_id != current_user.id and removing_attendee != current_user.id:
                 raise EventNotOwnedException
             event.attendees = [
                 attendee for attendee in event.attendees if attendee.id != removing_attendee
