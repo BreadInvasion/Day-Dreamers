@@ -54,17 +54,19 @@ function App() {
 
 
   // Helper function to update the data
-  const fetchEvents = () => {
-    fetch(`${BACKEND_URL}/api`, { method: "GET" })
-        .then(response => response.json())
-        .then(data => {
-          const formattedEvents = data.map(event => ({
-            start: moment.unix(event.start).toDate(),
-            end: moment.unix(event.end).toDate(),
-            title: event.title
-          }));
-          setEvents(formattedEvents);
-        });
+  const fetchEvents = async () => {
+    const resp = await fetch(`/api/event`, { method: "GET", headers: {"Authorization": "Bearer " + localStorage.getItem("daydreamers-access-token")} });
+    if(resp.status == 200) {
+      const respBody = await resp.json();
+      const formattedEvents = respBody.map(event => ({
+        start: moment.unix(event.start).toDate(),
+        end: moment.unix(event.end).toDate(),
+        title: event.title
+      }));
+    }
+    else if (resp.status == 401) {
+      //TODO: LOG OUT USER, THEIR ACCESS TOKEN IS INVALID
+    }
   };
 
   const onEventDrop = ({ event, start, end }) => {

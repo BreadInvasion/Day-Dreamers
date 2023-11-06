@@ -1,23 +1,16 @@
-from config.config import settings
-from sqlalchemy import (
-    create_engine,
-    ForeignKey,
-    Table,
-    Column,
-    String,
-)
-from sqlalchemy.orm import (
-    mapped_column,
-    relationship,
-    Mapped,
-    DeclarativeBase,
-    sessionmaker,
-)
+import uuid
 from typing import List
 
+from config.config import settings
+from sqlalchemy import Column, ForeignKey, String, Table, create_engine
 from sqlalchemy.dialects.postgresql import UUID as _UUIDC
-
-import uuid
+from sqlalchemy.orm import (
+    DeclarativeBase,
+    Mapped,
+    mapped_column,
+    relationship,
+    sessionmaker,
+)
 
 UUIDC = _UUIDC(as_uuid=True)
 
@@ -29,8 +22,8 @@ class Base(DeclarativeBase):
 user_event_association = Table(
     "user_event_association",
     Base.metadata,
-    Column("user_id", ForeignKey("users.id"), primary_key=True),
-    Column("event_id", ForeignKey("events.id"), primary_key=True),
+    Column("user_id", ForeignKey("users.id", ondelete="cascade"), primary_key=True),
+    Column("event_id", ForeignKey("events.id", ondelete="cascade"), primary_key=True),
 )
 
 
@@ -56,7 +49,7 @@ class Event(Base):
     start: Mapped[int] = mapped_column(nullable=False)
     end: Mapped[int] = mapped_column(nullable=False)
     owner: Mapped[User] = relationship(back_populates="owned_events")
-    owner_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"))
+    owner_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id", ondelete="cascade"))
     attendees: Mapped[List[User]] = relationship(
         secondary=user_event_association,
         back_populates="attending_events",

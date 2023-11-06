@@ -1,19 +1,22 @@
-from http import HTTPStatus
 import os
-from fastapi import FastAPI
-from fastapi import HTTPException
-from pydantic import BaseModel
-from fastapi.middleware.cors import CORSMiddleware
-from uuid import uuid4, UUID
+from datetime import timedelta
+from typing import Annotated, List
+from uuid import UUID, uuid4
+
+from api.models import SuccessResponse
+from api.routers.event import router as event_router
+from api.routers.user import router as user_router
 from database.database import DBSession, Event, User
-from sqlalchemy import select, insert
-from sqlalchemy.orm import Session
+from fastapi import Depends, FastAPI, status
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.security import OAuth2PasswordRequestForm
+from pydantic import BaseModel
+from security.access import Token, authenticate_user, create_access_token
+from sqlalchemy import insert, select
 from sqlalchemy.exc import NoResultFound
-from typing import List
+from sqlalchemy.orm import Session
 
 app = FastAPI()
-
-test_user = UUID("721fba7d-2c44-479a-b92c-a748305d654a", version=4)
 
 # Configure CORS
 app.add_middleware(
@@ -28,113 +31,18 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-
-events_data = []
-
-
-class NewEvent(BaseModel):
-    title: str
-    description: str
-    start: int
-    end: int
-
-
-class CleanEvent(BaseModel):
-    id: UUID
-    title: str
-    description: str
-    start: int
-    end: int
-    owner: UUID
-    attendees: List[UUID]
-
-
-class CleanList(BaseModel):
-    events: List[CleanEvent]
+app.include_router(event_router)
+app.include_router(user_router)
 
 
 @app.get("/ping")
-def health_check() -> HTTPStatus:
-    return HTTPStatus.OK
+def health_check() -> SuccessResponse:
+    return SuccessResponse()
 
 
-@app.get("/event/all")
-def get_events() -> List[CleanEvent]:
-    session: Session
-    with DBSession() as session:
-        event_list: List[Event] = list(session.scalars(select(Event)).all())
-        print("GET EVENTS: EVENT LIST AFTER DB CALL:")
-        print(event_list)
-        return [
-            CleanEvent(
-                id=event.id,
-                title=event.title,
-                description=event.description,
-                start=event.start,
-                end=event.end,
-                owner=event.owner.id,
-                attendees=[attendee.id for attendee in event.attendees],
-            )
-            for event in event_list
-        ]
-
-
-@app.post("/event/new")
-def add_event(event: NewEvent):
-    event.id = uuid4()
-    session: Session
-    with DBSession() as session:
-        session.add(
-            Event(
-                id=uuid4(),
-                title=event.title,
-                description=event.description,
-                start=event.start,
-                end=event.end,
-                owner=session.get(User, test_user),
-                attendees=[],
-            )
-        )
-        session.commit()
-    return {"status": "success"}
-
-
-@app.post("/event/attendees/remove")
-def remove_attendee(event_id: UUID, removing_attendee: UUID):
-    try:
-        session: Session
-        with DBSession() as session:
-            event: Event = session.query(Event).filter(Event.id == event_id).one()
-            event.attendees = [
-                attendee
-                for attendee in event.attendees
-                if attendee.id != removing_attendee
-            ]
-            session.commit()
-    except NoResultFound:
-        raise HTTPException(status_code=404, detail="Event not found")
-
-
-@app.post("/event/attendees/add")
-def add_attendee(event_id: UUID, new_attendee: UUID):
-    try:
-        session: Session
-        with DBSession() as session:
-            event: Event = session.query(Event).filter(Event.id == event_id).one()
-            event.attendees.append(
-                session.query(User).filter(User.id == new_attendee).one()
-            )
-            session.commit()
-    except NoResultFound:
-        raise HTTPException(status_code=404, detail="Event or attendee not found")
-
-
-@app.post("/event/delete")
-def delete_event(event_id: UUID):
-    session: Session
-    with DBSession() as session:
-        event = session.get(Event, event_id)
-        if not event:
-            raise HTTPException(status_code=404, detail="Event not found")
-        session.delete(event)
-        session.commit()
+@app.post("/token")
+def authorize_user(form_data: Annotated[OAuth2PasswordRequestForm, Depends()]) -> Token:
+    user: User = authenticate_user(form_data.username, form_data.password)
+    access_token_expires = timedelta(minutes=30)
+    access_token = create_access_token(data={"sub": user.id}, expires_delta=access_token_expires)
+    return Token(access_token=access_token, token_type="bearer")
