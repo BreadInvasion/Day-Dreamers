@@ -249,36 +249,31 @@ function App() {
   };
 
   // Function to handle user login
-  const handleLogin = (username, password) => {
+  const handleLogin = async (username, password) => {
     const formData = new URLSearchParams();
     formData.append('username', username);
     formData.append('password', password);
-  
-    fetch(`/api/token`, {
+    formData.append('grant_type', 'password');
+    
+    const response = await fetch(`/api/token`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded', 
       },
       body: formData.toString(),
-    })
-    .then(response => {
-      if (response.ok) {
-        return response.json();
-      }
-      return response.json().then(json => {
-        throw new Error(json.detail || 'Network response was not ok.');
-      });
-    })
-    .then(data => {
-      console.log('Login successful:', data);
-      // Save the access token to local storage
-      localStorage.setItem("daydreamers-access-token", data.access_token);
-      setShowLoginModal(false);
-    })
-    .catch(error => {
-      console.error('There has been a problem with your fetch operation:', error);
     });
-  };
+
+    const jsonBody = await response.json();
+
+    if(response.ok) {
+      localStorage.setItem('daydreamers-access-token', jsonBody.access_token);
+      setShowLoginModal(false);
+      return;
+    }
+
+    console.error('There has been a problem with your fetch operation:', jsonBody.detail?.msg);
+    return;
+  }
   
   
 

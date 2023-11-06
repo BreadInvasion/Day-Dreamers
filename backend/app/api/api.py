@@ -9,7 +9,7 @@ from database.database import DBSession, Event, User
 from fastapi import Depends, FastAPI, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import OAuth2PasswordRequestForm
-from models import SuccessResponse
+from models import SuccessResponse, UserData
 from pydantic import BaseModel
 from security.access import Token, authenticate_user, create_access_token
 from sqlalchemy import insert, select
@@ -44,5 +44,7 @@ def health_check() -> SuccessResponse:
 def authorize_user(form_data: Annotated[OAuth2PasswordRequestForm, Depends()]) -> Token:
     user: UserData = authenticate_user(form_data.username, form_data.password)
     access_token_expires = timedelta(minutes=30)
-    access_token = create_access_token(data={"sub": user.id}, expires_delta=access_token_expires)
+    access_token = create_access_token(
+        data={"sub": str(user.id)}, expires_delta=access_token_expires
+    )
     return Token(access_token=access_token, token_type="bearer")
