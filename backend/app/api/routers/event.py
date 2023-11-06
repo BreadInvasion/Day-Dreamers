@@ -67,13 +67,15 @@ def add_event(
 ) -> SuccessResponse:
     session: Session
     with DBSession() as session:
+        user = session.scalar(select(User).where(User.id == current_user.id))
+
         session.add(
             Event(
                 title=event.title,
                 description=event.description,
                 start=event.start,
                 end=event.end,
-                owner=current_user,
+                owner=user,
             )
         )
         session.commit()
