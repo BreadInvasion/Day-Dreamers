@@ -7,7 +7,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from models import SuccessResponse, UserData, UserInfo
 from pydantic import BaseModel
 from security.access import get_current_user
-from sqlalchemy import or_, select
+from sqlalchemy import or_, select, update
 from sqlalchemy.orm import Session, lazyload
 
 router = APIRouter()
@@ -79,6 +79,30 @@ def add_event(
             )
         )
         session.commit()
+    return SuccessResponse()
+
+
+class EditInfo(BaseModel):
+    title: str | None = None
+    description: str | None = None
+    start: int | None = None
+    stop: int | None = None
+
+
+@router.post("/event/edit")
+def edit_event(
+    edit_info: EditInfo, current_user: Annotated[UserData, Depends(get_current_user)]
+) -> SuccessResponse:
+    args_pruned = {key: value for key, value in edit_info.__dict__.items() if value is not None}
+
+    session: Session
+    with DBSession() as session:
+        event = session.scalar(select(Event).where(Event.owner_id == current_user.id))
+        if not event:
+            raise EventNotOwnedException
+        session.execute(update(Event).where(Event.id == event.id).values(**args_pruned))
+        session.commit()
+
     return SuccessResponse()
 
 
