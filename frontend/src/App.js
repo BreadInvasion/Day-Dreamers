@@ -6,6 +6,12 @@ import moment from 'moment';
 import withDragAndDrop from 'react-big-calendar/lib/addons/dragAndDrop';
 import 'react-big-calendar/lib/addons/dragAndDrop/styles.css';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
+import { AddEventModal } from './Modals/AddEventModal';
+import { LanguageContext } from './LanguageContext';
+import { InfoBox } from './Containers/InfoBox';
+import { CreateUserModal } from './Modals/CreateUserModal';
+import { LoginModal } from './Modals/LoginModal';
+import { EditEventModal } from './Modals/EditEventModal';
 
 
 const BACKEND_URL = 'http://localhost:8080';
@@ -49,57 +55,7 @@ const translations = {
     saveEvent: "保存事件",
   }
 };
-// Create a Language Context
-const LanguageContext = createContext({
-  language: 'en',
-  toggleLanguage: () => { },
-});
 
-// Language provider with state and function to toggle language
-function LanguageProvider({ children }) {
-  const [language, setLanguage] = useState('en');
-
-  const toggleLanguage = () => {
-    setLanguage((prevLanguage) => (prevLanguage === 'en' ? 'zh' : 'en'));
-  };
-
-  return (
-    <LanguageContext.Provider value={{ language, toggleLanguage }}>
-      {children}
-    </LanguageContext.Provider>
-  );
-}
-
-// Modal component for creating a new user
-function CreateUserModal({ onSubmit }) {
-  const { language } = useContext(LanguageContext);
-  const t = (key) => translations[language][key];
-  const [username, setUsername] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-
-  return (
-    <div className="modal">
-      {/* Form elements and submit button */}
-      <button onClick={() => onSubmit(username, email, password)}>{t('submit')}</button>
-    </div>
-  );
-}
-
-// Modal component for logging in
-function LoginModal({ onSubmit }) {
-  const { language } = useContext(LanguageContext);
-  const t = (key) => translations[language][key];
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
-
-  return (
-    <div className="modal">
-      {/* Form elements and submit button */}
-      <button onClick={() => onSubmit(username, password)}>{t('submit')}</button>
-    </div>
-  );
-}
 function App() {
   const [activeUsername, setActiveUsername] = useState("");
   const [activeEmail, setActiveEmail] = useState("");
@@ -107,15 +63,14 @@ function App() {
   const [addAttendeeField, setAddAttendeeField] = useState("");
 
   const [events, setEvents] = useState([]);
-  const [title, setTitle] = useState('');
-  const [description, setDescription] = useState('');
-  const [startTime, setStartTime] = useState('');
-  const [endTime, setEndTime] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState(null);
   const [showCreateUserModal, setShowCreateUserModal] = useState(false);
   const [showEditEventModal, setShowEditEventModal] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
+
+  const { language, toggleLanguage } = useContext(LanguageContext);
+  const t_ = (key) => translations[language][key];
 
 
   const getUserInfo = async () => {
@@ -128,6 +83,8 @@ function App() {
   }
 
   const handleAddAttendee = async () => {
+    const event_id = selectedEvent.event_id
+    const new_attendee = addAttendeeField
     const resp = await fetch(`/api/event/attendees/add`,
       {
         method: "POST",
@@ -135,14 +92,16 @@ function App() {
           'Content-Type': 'application/json',
           "Authorization": "Bearer " + localStorage.getItem("daydreamers-access-token")
         },
-        body: {
-          "event_id": selectedEvent.id,
-          "new_attendee": addAttendeeField
-        }
+        body: JSON.stringify({ event_id, new_attendee })
       });
+    if(resp.ok) {
+      fetchEvents();
+      setSelectedEvent(undefined);
+    }
   }
 
-  const handleRemoveAttendee = async (event_id, attendee_id) => {
+  const handleRemoveAttendee = async (eid, attendee_id) => {
+    const removing_attendee = attendee_id
     const resp = await fetch(`/api/event/attendees/remove`,
       {
         method: "POST",
@@ -150,13 +109,11 @@ function App() {
           'Content-Type': 'application/json',
           "Authorization": "Bearer " + localStorage.getItem("daydreamers-access-token")
         },
-        body: {
-          "event_id": event_id,
-          "removing_attendee": attendee_id
-        }
+        body: JSON.stringify({ event_id: eid, removing_attendee: removing_attendee })
       });
     if (resp.ok) {
       fetchEvents();
+      setSelectedEvent(undefined);
       return;
     }
     console.error("Something went wrong removing an attendee.")
@@ -216,7 +173,7 @@ function App() {
   }, []);
 
 
-  const handleAddEvent = () => {
+  const handleAddEvent = (title, description, startTime, endTime) => {
     const newEvent = {
       start: moment(startTime).unix(),
       end: moment(endTime).unix(),
@@ -242,11 +199,6 @@ function App() {
         }]);
         fetchEvents();
       });
-
-    setTitle('');
-    setDescription('');
-    setStartTime('');
-    setEndTime('');
     toggleModal();
   }
 
@@ -259,11 +211,14 @@ function App() {
     if (selectedEvent) {
       const eventIndex = events.findIndex(e => e.start === selectedEvent.start && e.end === selectedEvent.end && e.title === selectedEvent.title);
       if (selectedEvent) {
-        fetch(`/api/event/${selectedEvent.id}`, {
-          method: "DELETE",
+        const event_id = selectedEvent.event_id;
+        fetch(`/api/event/delete`, {
+          method: "POST",
           headers: {
+            'Content-Type': "application/json",
             'Authorization': "Bearer " + localStorage.getItem("daydreamers-access-token")
-          }
+          },
+          body: JSON.stringify({event_id})
         })
           .then(response => {
             if (response.ok) {
@@ -337,13 +292,7 @@ function App() {
     }
   }
 
-  const handleCreateUser = (event) => {
-    event.preventDefault();
-    const formData = new FormData(event.target);
-    const username = formData.get('username');
-    const email = formData.get('email');
-    const password = formData.get('password');
-
+  const handleCreateUser = (email, username, password) => {
     fetch(`/api/user/new`, {
       method: 'POST',
       headers: {
@@ -368,18 +317,15 @@ function App() {
 
   const handleEditEvent = async (title, description) => {
     setShowEditEventModal(false);
+    const start = moment(selectedEvent.start).unix()
+    const end = moment(selectedEvent.end).unix()
     const response = await fetch(`/api/event/edit`, {
       method: "POST",
       headers: {
         'Content-Type': 'application/json',
         'Authorization': "Bearer " + localStorage.getItem("daydreamers-access-token")
       },
-      body: {
-        'title': title,
-        'description': description,
-        'start': moment(selectedEvent.start).unix(),
-        'stop': moment(selectedEvent.end).unix()
-      }
+      body: JSON.stringify({ title, description, start, end })
     })
     if (response.ok) {
       fetchEvents();
@@ -407,8 +353,9 @@ function App() {
 
     if (response.ok) {
       localStorage.setItem('daydreamers-access-token', jsonBody.access_token);
-      getUserInfo();
+      await getUserInfo();
       setShowLoginModal(false);
+      fetchEvents();
       return;
     }
 
@@ -421,6 +368,10 @@ function App() {
   // Function to handle user logout
   const handleLogout = () => {
     localStorage.removeItem("daydreamers-access-token"); // Clear the token from local storage
+    setActiveUsername("")
+    setActiveEmail("")
+    setSelectedEvent(undefined)
+    setEvents([])
   };
 
 
@@ -438,81 +389,29 @@ function App() {
       <button onClick={handleLogout}>Logout</button>
 
       {/* Modal for creating a new user */}
-      {showCreateUserModal && (
-        <div className="modal">
-          <div className="modal-content">
-            <span className="close" onClick={() => setShowCreateUserModal(false)}>&times;</span>
-            <h2>{t('subcreateusermit')}</h2>
-            <form onSubmit={handleCreateUser}>
-              <div className="input-group">
-                <label htmlFor="username">{t('username')}:</label>
-                <input id="username" type="text" name="username" required />
-              </div>
-              <div className="input-group">
-                <label htmlFor="email">{t('email')}:</label>
-                <input id="email" type="email" name="email" required />
-              </div>
-              <div className="input-group">
-                <label htmlFor="password">{t('password')}:</label>
-                <input id="password" type="password" name="password" required />
-              </div>
-              <button type="submit">{t('createuser')}</button>
-            </form>
-          </div>
-        </div>
-      )}
+      {showCreateUserModal && <CreateUserModal
+        setShowCreateUserModal={setShowCreateUserModal}
+        handleCreateUser={handleCreateUser}
+        translations={translations}
+      />
+      }
 
       {/* Modal for editing event */}
-      {showEditEventModal && (
-        <div className="modal">
-          <div className="modal-content">
-            <span className="close" onClick={() => setShowEditEventModal(false)}>&times;</span>
-            <h2>Edit Event</h2>
-            <form onSubmit={(e) => {
-              e.preventDefault();
-              const title = e.target.title.value;
-              const description = e.target.description.value;
-              handleEditEvent(title, description);
-            }}>
-              <div className="input-group">
-                <label htmlFor="title">Title:</label>
-                <input id="title" type="text" name="title" defaultValue={selectedEvent.title} required />
-              </div>
-              <div className="input-group">
-                <label htmlFor="description">Description:</label>
-                <input id="description" type="text" name="description" defaultValue={selectedEvent.description} required />
-              </div>
-              <button type="submit">Submit Changes</button>
-            </form>
-          </div>
-        </div>
-      )}
+      {showEditEventModal && <EditEventModal
+        setShowEditEventModal={setShowEditEventModal}
+        handleEditEvent={handleEditEvent}
+        selectedEvent={selectedEvent}
+        translations={translations}
+      />
+      }
 
       {/* Modal for logging in */}
-      {showLoginModal && (
-        <div className="modal">
-          <div className="modal-content">
-            <span className="close" onClick={() => setShowLoginModal(false)}>&times;</span>
-            <h2>{t('login')}</h2>
-            <form onSubmit={(e) => {
-              e.preventDefault();
-              const username = e.target.username.value;
-              const password = e.target.password.value;
-              handleLogin(username, password);
-            }}>
-              <div className="input-group">
-                <label htmlFor="username">{t('username  ')}:</label>
-                <input id="username" type="text" name="username" required />
-              </div>
-              <div className="input-group">
-                <label htmlFor="password">{t('password')}:</label>
-                <input id="password" type="password" name="password" required />
-              </div>
-              <button type="submit">{t('login')}</button>
-            </form>
-          </div>
-        </div>
-      )}
+      {showLoginModal && <LoginModal
+        setShowLoginModal={setShowLoginModal}
+        handleLogin={handleLogin}
+        translations={translations}
+      />
+      }
       {/*  Calendar and Event Component*/}
       <DnDCalendar
         localizer={localizer}
@@ -527,83 +426,28 @@ function App() {
         onSelectEvent={handleSelectEvent}
         onSelectSlot={handleSelectSlot}
       />
-      <button className="addButton" onClick={toggleModal}>{t('addEvent')}</button>
+      <button className="addButton" onClick={toggleModal}>{t_('addEvent')}</button>
       {selectedEvent && (<>
-        <button className="deleteButton" onClick={handleDeleteEvent}>{t('deleteEvent')}</button>
-        <div className='infoBox'>
-          <p>
-            <b>{selectedEvent.title}</b>
-            <br />
-            <i>{selectedEvent.description}</i>
-            <br />
-            <b>Host: </b>{selectedEvent.owner_username}
-            <br />
-            <b>Attendees: </b>
-            <br />
-            {selectedEvent.attendees.map(attendee => (<><p onClick={() => { handleRemoveAttendee(selectedEvent.id, attendee.id) }}>{attendee.username}</p> <br /></>))}
-          </p>
-          {selectedEvent.owner_username === activeUsername &&
-            <>
-              <button className="secondaryButton" onClick={() => { setShowEditEventModal(true) }}>Edit Event</button> <br />
-              <input placeholder='Attendee' onChange={e => setAddAttendeeField(e.target.value)} /> <br />
-              <button className="secondaryButton" onClick={() => { handleAddAttendee() }}>Add</button>
-            </>}
-        </div>
+        <button className="deleteButton" onClick={handleDeleteEvent}>{t_('deleteEvent')}</button>
+        <InfoBox
+          activeUsername={activeUsername}
+          selectedEvent={selectedEvent}
+          handleAddAttendee={handleAddAttendee}
+          handleRemoveAttendee={handleRemoveAttendee}
+          setShowEditEventModal={setShowEditEventModal}
+          setAddAttendeeField={setAddAttendeeField}
+          translations={translations}
+        />
       </>
       )}
-      {showModal && (
-        <div className="modal">
-          <div className="modal-content">
-            <span className="close" onClick={toggleModal}>&times;</span>
-            <h2>{t('addEventModalTitle')}</h2>
-            <div className="input-group">
-              <label htmlFor="eventTitle">{t('title')}</label>
-              <input
-                id="eventTitle"
-                value={title}
-                onChange={e => setTitle(e.target.value)}
-                placeholder={t('title')}
-              />
-            </div>
-            <div className="input-group">
-              <label htmlFor="eventDescription">{t('description')}</label>
-              <input
-                id="eventDescription"
-                value={description}
-                onChange={e => setDescription(e.target.value)}
-                placeholder={t('description')}
-              />
-            </div>
-            <div className="input-group">
-              <label htmlFor="startTime">{t('startTime')}</label>
-              <input
-                id="startTime"
-                type="datetime-local"
-                value={startTime}
-                onChange={e => setStartTime(e.target.value)}
-              />
-            </div>
-            <div className="input-group">
-              <label htmlFor="endTime">{t('endTime')}</label>
-              <input
-                id="endTime"
-                type="datetime-local"
-                value={endTime}
-                onChange={e => setEndTime(e.target.value)}
-              />
-            </div>
-            <button onClick={handleAddEvent}>{t('saveEvent')}</button>
-          </div>
-        </div>
-      )}
+      {showModal && <AddEventModal
+        toggleModal={toggleModal}
+        handleAddEvent={handleAddEvent}
+        translations={translations}
+      />
+      }
     </div>
   );
 }
 
-export default function WrappedApp() {
-  return (
-    <LanguageProvider>
-      <App />
-    </LanguageProvider>
-  );
-}
+export default App;

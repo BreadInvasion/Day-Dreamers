@@ -87,7 +87,7 @@ class EditInfo(BaseModel):
     title: str | None = None
     description: str | None = None
     start: int | None = None
-    stop: int | None = None
+    end: int | None = None
 
 
 @router.post("/event/edit")
@@ -109,28 +109,34 @@ def edit_event(
     return SuccessResponse()
 
 
+class RemoveAttendeeInfo(BaseModel):
+    event_id: UUID
+    removing_attendee: UUID
+
+
 @router.post("/event/attendees/remove")
 def remove_attendee(
-    event_id: UUID,
-    removing_attendee: UUID,
+    info: RemoveAttendeeInfo,
     current_user: Annotated[UserData, Depends(get_current_user)],
 ):
     session: Session
     with DBSession() as session:
         event: Event = session.scalar(
-            select(Event).where(Event.id == event_id).options(lazyload(Event.attendees))
+            select(Event)
+            .where(Event.id == info.event_id)
+            .options(lazyload(Event.attendees))
         )
 
         if event:
             if (
                 event.owner_id != current_user.id
-                and removing_attendee != current_user.id
+                and info.removing_attendee != current_user.id
             ):
                 raise EventNotOwnedException
             event.attendees = [
                 attendee
                 for attendee in event.attendees
-                if attendee.id != removing_attendee
+                if attendee.id != info.removing_attendee
             ]
             session.commit()
             return {"status": "success"}
@@ -138,23 +144,31 @@ def remove_attendee(
         raise DoesNotExistException(Event)
 
 
+class AddAttendeeInfo(BaseModel):
+    event_id: UUID
+    new_attendee: str
+
+
 @router.post("/event/attendees/add")
 def add_attendee(
-    event_id: UUID,
-    new_attendee: str,
+    info: AddAttendeeInfo,
     current_user: Annotated[UserData, Depends(get_current_user)],
 ) -> SuccessResponse:
     session: Session
     with DBSession() as session:
         event: Event = session.scalar(
-            select(Event).where(Event.id == event_id).options(lazyload(Event.attendees))
+            select(Event)
+            .where(Event.id == info.event_id)
+            .options(lazyload(Event.attendees))
         )
 
         if event:
             if event.owner_id != current_user.id:
                 raise EventNotOwnedException
 
-            attendee = session.scalar(select(User).where(User.username == new_attendee))
+            attendee = session.scalar(
+                select(User).where(User.username == info.new_attendee)
+            )
             if not attendee:
                 raise DoesNotExistException(User)
             event.attendees.append(attendee)
@@ -164,13 +178,17 @@ def add_attendee(
         raise DoesNotExistException(Event)
 
 
+class DeleteEventInfo(BaseModel):
+    event_id: UUID
+
+
 @router.post("/event/delete")
 def delete_event(
-    event_id: UUID, current_user: Annotated[UserData, Depends(get_current_user)]
+    info: DeleteEventInfo, current_user: Annotated[UserData, Depends(get_current_user)]
 ):
     session: Session
     with DBSession() as session:
-        event = session.get(Event, event_id)
+        event = session.get(Event, info.event_id)
         if not event:
             raise DoesNotExistException(Event)
         if event.owner_id != current_user.id:

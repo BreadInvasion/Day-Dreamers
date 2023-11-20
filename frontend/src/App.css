@@ -118,6 +118,10 @@
   width: 120px;
 }
 
+.attendeeName:hover {
+  color: red;
+}
+
 .deleteButton {
   margin-top: 40px;
   position: absolute;
