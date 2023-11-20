@@ -527,9 +527,9 @@ function App() {
         onSelectEvent={handleSelectEvent}
         onSelectSlot={handleSelectSlot}
       />
-      <button className="addButton" onClick={toggleModal}>Add Event +</button>
+      <button className="addButton" onClick={toggleModal}>{t('addEvent')}</button>
       {selectedEvent && (<>
-        <button className="deleteButton" onClick={handleDeleteEvent}>Delete Event</button>
+        <button className="deleteButton" onClick={handleDeleteEvent}>{t('deleteEvent')}</button>
         <div className='infoBox'>
           <p>
             <b>{selectedEvent.title}</b>
