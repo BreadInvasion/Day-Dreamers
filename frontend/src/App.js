@@ -1,5 +1,5 @@
 import logo from './logo.svg';
-import React, { useEffect, useState, useContext, createContext  } from 'react';
+import React, { useEffect, useState } from 'react';
 import './App.css';
 import { Calendar, momentLocalizer } from 'react-big-calendar';
 import moment from 'moment';
@@ -11,49 +11,6 @@ const BACKEND_URL = 'http://localhost:8080';
 const localizer = momentLocalizer(moment);
 const DnDCalendar = withDragAndDrop(Calendar);
 
-const translations = {
-  en: {
-    addEvent: "Add Event +",
-    deleteEvent: "Delete Event",
-    addEventModalTitle: "Add Event",
-    title: "Title",
-    description: "Description",
-    startTime: "Start Time",
-    endTime: "End Time",
-    saveEvent: "Save Event",
-  },
-  zh: {
-    addEvent: "添加事件 +",
-    deleteEvent: "删除事件",
-    addEventModalTitle: "添加事件",
-    title: "标题",
-    description: "描述",
-    startTime: "开始时间",
-    endTime: "结束时间",
-    saveEvent: "保存事件",
-  }
-};
-// Create a Language Context
-const LanguageContext = createContext({
-  language: 'en',
-  toggleLanguage: () => {},
-});
-
-// Language provider with state and function to toggle language
-function LanguageProvider({ children }) {
-  const [language, setLanguage] = useState('en');
-
-  const toggleLanguage = () => {
-    setLanguage((prevLanguage) => (prevLanguage === 'en' ? 'zh' : 'en'));
-  };
-
-  return (
-    <LanguageContext.Provider value={{ language, toggleLanguage }}>
-      {children}
-    </LanguageContext.Provider>
-  );
-}
-
 function App() {
   const [events, setEvents] = useState([]);
   const [title, setTitle] = useState('');
@@ -63,8 +20,6 @@ function App() {
   const [showModal, setShowModal] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState(null);
 
-  const { language, toggleLanguage  } = useContext(LanguageContext);
-  const t = (key) => translations[language][key];
 
 
   // Helper function to update the data
@@ -228,9 +183,6 @@ function App() {
 
   return (
       <div>
-        <button onClick={toggleLanguage}>
-        {language === 'en' ? '中文' : 'English'}
-       </button>
         <DnDCalendar
             localizer={localizer}
             events={events}
@@ -244,62 +196,37 @@ function App() {
             onSelectEvent={handleSelectEvent}
             onSelectSlot={handleSelectSlot}
         />
-      <button className="addButton" onClick={toggleModal}>{t('addEvent')}</button>
+      <button className="addButton" onClick={toggleModal}>Add Event +</button>
       {selectedEvent && (
-        <button className="deleteButton" onClick={handleDeleteEvent}>{t('deleteEvent')}</button>
+        <button className="deleteButton" onClick={handleDeleteEvent}>Delete Event</button>
       )}
       {showModal && (
         <div className="modal">
           <div className="modal-content">
             <span className="close" onClick={toggleModal}>&times;</span>
-            <h2>{t('addEventModalTitle')}</h2>
+            <h2>Add Event</h2>
             <div className="input-group">
-              <label htmlFor="eventTitle">{t('title')}</label>
-              <input
-                id="eventTitle"
-                value={title}
-                onChange={e => setTitle(e.target.value)}
-                placeholder={t('title')}
-              />
+              <label htmlFor="eventTitle">Title</label>
+              <input id="eventTitle" value={title} onChange={e => setTitle(e.target.value)} placeholder="Title"/>
             </div>
             <div className="input-group">
-              <label htmlFor="eventDescription">{t('description')}</label>
-              <input
-                id="eventDescription"
-                value={description}
-                onChange={e => setDescription(e.target.value)}
-                placeholder={t('description')}
-              />
+              <label htmlFor="eventDescription">Description</label>
+              <input id="eventDescription" value={description} onChange={e => setDescription(e.target.value)} placeholder="Description"/>
             </div>
             <div className="input-group">
-              <label htmlFor="startTime">{t('startTime')}</label>
-              <input
-                id="startTime"
-                type="datetime-local"
-                value={startTime}
-                onChange={e => setStartTime(e.target.value)}
-              />
+              <label htmlFor="startTime">Start Time</label>
+              <input id="startTime" type="datetime-local" value={startTime} onChange={e => setStartTime(e.target.value)}/>
             </div>
             <div className="input-group">
-              <label htmlFor="endTime">{t('endTime')}</label>
-              <input
-                id="endTime"
-                type="datetime-local"
-                value={endTime}
-                onChange={e => setEndTime(e.target.value)}
-              />
+              <label htmlFor="endTime">End Time</label>
+              <input id="endTime" type="datetime-local" value={endTime} onChange={e => setEndTime(e.target.value)}/>
             </div>
-            <button onClick={handleAddEvent}>{t('saveEvent')}</button>
+            <button onClick={handleAddEvent}>Save Event</button>
           </div>
         </div>
       )}
     </div>
   );
 }
-export default function WrappedApp() {
-  return (
-    <LanguageProvider>
-      <App />
-    </LanguageProvider>
-  );
-}
+
+export default App;
