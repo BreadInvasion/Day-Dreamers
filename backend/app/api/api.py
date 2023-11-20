@@ -1,51 +1,50 @@
 import os
-from fastapi import FastAPI
-from fastapi import HTTPException
-from pydantic import BaseModel
+from datetime import timedelta
+from typing import Annotated, List
+from uuid import UUID, uuid4
+
+from api.routers.event import router as event_router
+from api.routers.user import router as user_router
+from database.database import DBSession, Event, User
+from fastapi import Depends, FastAPI, status
 from fastapi.middleware.cors import CORSMiddleware
-from uuid import uuid4
+from fastapi.security import OAuth2PasswordRequestForm
+from models import SuccessResponse, UserData
+from pydantic import BaseModel
+from security.access import Token, authenticate_user, create_access_token
+from sqlalchemy import insert, select
+from sqlalchemy.exc import NoResultFound
+from sqlalchemy.orm import Session
 
 app = FastAPI()
 
 # Configure CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # For development, you might want to restrict this later!
+    allow_origins=[
+        "http://localhost",
+        "localhost",
+        "*",
+    ],  # For development, you might want to restrict this later!
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
+app.include_router(event_router)
+app.include_router(user_router)
 
-class Event(BaseModel):
-    start: int
-    end: int
-    title: str
-    description: str
 
-events_data = []
+@app.get("/ping")
+def health_check() -> SuccessResponse:
+    return SuccessResponse()
 
-@app.get("/api")
-def get_events():
-    return events_data
 
-@app.post("/api")
-def add_event(event: Event):
-    events_data.append(event.dict())
-    return event
-
-@app.put("/api/{event_id}")
-def update_event(event_id: int, event: Event):
-    try:
-        events_data[event_id] = event.dict()
-    except IndexError:
-        raise HTTPException(status_code=404, detail="Event not found")
-    return {"status": "success"}
-
-@app.delete("/api/{event_id}")
-def delete_event(event_id: int):
-    try:
-        events_data.pop(event_id)
-    except IndexError:
-        raise HTTPException(status_code=404, detail="Event not found")
-    return {"status": "success"}
+@app.post("/token")
+def authorize_user(form_data: Annotated[OAuth2PasswordRequestForm, Depends()]) -> Token:
+    user: UserData = authenticate_user(form_data.username, form_data.password)
+    access_token_expires = timedelta(minutes=30)
+    access_token = create_access_token(
+        data={"sub": str(user.id)}, expires_delta=access_token_expires
+    )
+    return Token(access_token=access_token, token_type="bearer")
