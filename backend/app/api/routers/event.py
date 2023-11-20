@@ -141,7 +141,7 @@ def remove_attendee(
 @router.post("/event/attendees/add")
 def add_attendee(
     event_id: UUID,
-    new_attendee: UUID,
+    new_attendee: str,
     current_user: Annotated[UserData, Depends(get_current_user)],
 ) -> SuccessResponse:
     session: Session
@@ -154,7 +154,7 @@ def add_attendee(
             if event.owner_id != current_user.id:
                 raise EventNotOwnedException
 
-            attendee = session.scalar(select(User).where(User.id == new_attendee))
+            attendee = session.scalar(select(User).where(User.username == new_attendee))
             if not attendee:
                 raise DoesNotExistException(User)
             event.attendees.append(attendee)

@@ -42,6 +42,11 @@ function LoginModal({ onSubmit }) {
   );
 }
 function App() {
+  const [activeUsername, setActiveUsername] = useState("");
+  const [activeEmail, setActiveEmail] = useState("");
+
+  const [addAttendeeField, setAddAttendeeField] = useState("");
+
   const [events, setEvents] = useState([]);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -50,19 +55,72 @@ function App() {
   const [showModal, setShowModal] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState(null);
   const [showCreateUserModal, setShowCreateUserModal] = useState(false);
+  const [showEditEventModal, setShowEditEventModal] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
 
+
+  const getUserInfo = async () => {
+    const resp = await fetch(`/api/user/me`, { method: "POST", headers: { "Authorization": "Bearer " + localStorage.getItem("daydreamers-access-token") } });
+    if (resp.ok) {
+      const jsonBody = await resp.json();
+      setActiveEmail(jsonBody.email);
+      setActiveUsername(jsonBody.username);
+    }
+  }
+
+  const handleAddAttendee = async () => {
+    const resp = await fetch(`/api/event/attendees/add`,
+      {
+        method: "POST",
+        headers: {
+          'Content-Type': 'application/json',
+          "Authorization": "Bearer " + localStorage.getItem("daydreamers-access-token")
+        },
+        body: {
+          "event_id": selectedEvent.id,
+          "new_attendee": addAttendeeField
+        }
+      });
+  }
+
+  const handleRemoveAttendee = async (event_id, attendee_id) => {
+    const resp = await fetch(`/api/event/attendees/remove`,
+      {
+        method: "POST",
+        headers: {
+          'Content-Type': 'application/json',
+          "Authorization": "Bearer " + localStorage.getItem("daydreamers-access-token")
+        },
+        body: {
+          "event_id": event_id,
+          "removing_attendee": attendee_id
+        }
+      });
+    if (resp.ok) {
+      fetchEvents();
+      return;
+    }
+    console.error("Something went wrong removing an attendee.")
+  }
 
   // Helper function to update the data
   const fetchEvents = async () => {
     const resp = await fetch(`/api/event`, { method: "GET", headers: { "Authorization": "Bearer " + localStorage.getItem("daydreamers-access-token") } });
     if (resp.status == 200) {
       const respBody = await resp.json();
+      console.log("Number of events retrieved: " + respBody.length)
       const formattedEvents = respBody.map(event => ({
         start: moment.unix(event.start).toDate(),
         end: moment.unix(event.end).toDate(),
-        title: event.title
+        title: event.title,
+        description: event.description,
+        event_id: event.id,
+        owner_id: event.owner?.id,
+        owner_username: event.owner?.username,
+        attendees: event.attendees
       }));
+      console.log(formattedEvents)
+      setEvents(formattedEvents);
     }
     else if (resp.status == 401) {
       //TODO: LOG OUT USER, THEIR ACCESS TOKEN IS INVALID
@@ -95,6 +153,7 @@ function App() {
 
   useEffect(() => {
     fetchEvents();
+    getUserInfo();
   }, []);
 
 
@@ -161,15 +220,15 @@ function App() {
   }
   const handleEventDrop = (event, start, end) => {
     const idx = events.indexOf(event);
-    fetch(`/api/event/${event.id}`, {
-      method: "PUT",
+    fetch(`/api/event/edit`, {
+      method: "POST",
       headers: {
         'Content-Type': 'application/json',
         'Authorization': "Bearer " + localStorage.getItem("daydreamers-access-token")
       },
       body: JSON.stringify({
         start: moment(start).unix(),
-        end: moment(end).unix(),
+        stop: moment(end).unix(),
         title: event.title,
         description: event.description
       })
@@ -248,6 +307,28 @@ function App() {
       });
   };
 
+  const handleEditEvent = async (title, description) => {
+    setShowEditEventModal(false);
+    const response = await fetch(`/api/event/edit`, {
+      method: "POST",
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': "Bearer " + localStorage.getItem("daydreamers-access-token")
+      },
+      body: {
+        'title': title,
+        'description': description,
+        'start': moment(selectedEvent.start).unix(),
+        'stop': moment(selectedEvent.end).unix()
+      }
+    })
+    if (response.ok) {
+      fetchEvents();
+      return;
+    }
+    console.error("Something went wrong editing the event.");
+  }
+
   // Function to handle user login
   const handleLogin = async (username, password) => {
     const formData = new URLSearchParams();
@@ -267,6 +348,7 @@ function App() {
 
     if (response.ok) {
       localStorage.setItem('daydreamers-access-token', jsonBody.access_token);
+      getUserInfo();
       setShowLoginModal(false);
       return;
     }
@@ -288,7 +370,7 @@ function App() {
 
     <div>
       {/*User Login component*/}
-      <button onClick={() => setShowCreateUserModal(true)}>Create New User</button>
+      <button className='secondaryButton' onClick={() => setShowCreateUserModal(true)}>Create New User</button>
       <button onClick={() => setShowLoginModal(true)}>Login</button>
       <button onClick={handleLogout}>Logout</button>
 
@@ -312,6 +394,32 @@ function App() {
                 <input id="password" type="password" name="password" required />
               </div>
               <button type="submit">Create User</button>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal for editing event */}
+      {showEditEventModal && (
+        <div className="modal">
+          <div className="modal-content">
+            <span className="close" onClick={() => setShowEditEventModal(false)}>&times;</span>
+            <h2>Edit Event</h2>
+            <form onSubmit={(e) => {
+              e.preventDefault();
+              const title = e.target.title.value;
+              const description = e.target.description.value;
+              handleEditEvent(title, description);
+            }}>
+              <div className="input-group">
+                <label htmlFor="title">Title:</label>
+                <input id="title" type="text" name="title" defaultValue={selectedEvent.title} required />
+              </div>
+              <div className="input-group">
+                <label htmlFor="description">Description:</label>
+                <input id="description" type="text" name="description" defaultValue={selectedEvent.description} required />
+              </div>
+              <button type="submit">Submit Changes</button>
             </form>
           </div>
         </div>
@@ -357,8 +465,28 @@ function App() {
         onSelectSlot={handleSelectSlot}
       />
       <button className="addButton" onClick={toggleModal}>Add Event +</button>
-      {selectedEvent && (
+      {selectedEvent && (<>
         <button className="deleteButton" onClick={handleDeleteEvent}>Delete Event</button>
+        <div className='infoBox'>
+          <p>
+            <b>{selectedEvent.title}</b>
+            <br />
+            <i>{selectedEvent.description}</i>
+            <br />
+            <b>Host: </b>{selectedEvent.owner_username}
+            <br />
+            <b>Attendees: </b>
+            <br />
+            {selectedEvent.attendees.map(attendee => (<><p onClick={() => { handleRemoveAttendee(selectedEvent.id, attendee.id) }}>{attendee.username}</p> <br /></>))}
+          </p>
+          {selectedEvent.owner_username === activeUsername &&
+            <>
+              <button className="secondaryButton" onClick={() => { setShowEditEventModal(true) }}>Edit Event</button> <br />
+              <input placeholder='Attendee' onChange={e => setAddAttendeeField(e.target.value)} /> <br />
+              <button className="secondaryButton" onClick={() => { handleAddAttendee() }}>Add</button>
+            </>}
+        </div>
+      </>
       )}
       {showModal && (
         <div className="modal">
