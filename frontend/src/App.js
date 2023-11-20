@@ -1,5 +1,5 @@
 import logo from './logo.svg';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useContext, createContext } from 'react';
 import './App.css';
 import { Calendar, momentLocalizer } from 'react-big-calendar';
 import moment from 'moment';
@@ -13,10 +13,67 @@ const localizer = momentLocalizer(moment);
 const DnDCalendar = withDragAndDrop(Calendar);
 
 
+const translations = {
+  en: {
+    createuser: "Create New User",
+    login: "Login",
+    logout: "Logout",
+    submit: "submit",
+    username: "username",
+    email: "email",
+    password: "password",
+    addEvent: "Add Event +",
+    deleteEvent: "Delete Event",
+    addEventModalTitle: "Add Event",
+    title: "Title",
+    description: "Description",
+    startTime: "Start Time",
+    endTime: "End Time",
+    saveEvent: "Save Event",
+  },
+  zh: {
+    createuser: "创建新用户",
+    login: "登录",
+    logout: "登出",
+    submit: "提交",
+    username: "用户名",
+    email: "邮件",
+    password: "密码",
+    addEvent: "添加事件 +",
+    deleteEvent: "删除事件",
+    addEventModalTitle: "添加事件",
+    title: "标题",
+    description: "描述",
+    startTime: "开始时间",
+    endTime: "结束时间",
+    saveEvent: "保存事件",
+  }
+};
+// Create a Language Context
+const LanguageContext = createContext({
+  language: 'en',
+  toggleLanguage: () => { },
+});
 
+// Language provider with state and function to toggle language
+function LanguageProvider({ children }) {
+  const [language, setLanguage] = useState('en');
+
+  const toggleLanguage = () => {
+    setLanguage((prevLanguage) => (prevLanguage === 'en' ? 'zh' : 'en'));
+  };
+
+  return (
+    <LanguageContext.Provider value={{ language, toggleLanguage }}>
+      {children}
+    </LanguageContext.Provider>
+  );
+}
 
 // Modal component for creating a new user
 function CreateUserModal({ onSubmit }) {
+  const { language } = useContext(LanguageContext);
+  const t = (key) => translations[language][key];
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -24,20 +81,22 @@ function CreateUserModal({ onSubmit }) {
   return (
     <div className="modal">
       {/* Form elements and submit button */}
-      <button onClick={() => onSubmit(username, email, password)}>Submit</button>
+      <button onClick={() => onSubmit(username, email, password)}>{t('submit')}</button>
     </div>
   );
 }
 
 // Modal component for logging in
 function LoginModal({ onSubmit }) {
+  const { language } = useContext(LanguageContext);
+  const t = (key) => translations[language][key];
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
 
   return (
     <div className="modal">
       {/* Form elements and submit button */}
-      <button onClick={() => onSubmit(username, password)}>Submit</button>
+      <button onClick={() => onSubmit(username, password)}>{t('submit')}</button>
     </div>
   );
 }
@@ -369,6 +428,10 @@ function App() {
   return (
 
     <div>
+      <button onClick={toggleLanguage}>
+        {language === 'en' ? '中文' : 'English'}
+      </button>
+
       {/*User Login component*/}
       <button className='secondaryButton' onClick={() => setShowCreateUserModal(true)}>Create New User</button>
       <button onClick={() => setShowLoginModal(true)}>Login</button>
@@ -379,21 +442,21 @@ function App() {
         <div className="modal">
           <div className="modal-content">
             <span className="close" onClick={() => setShowCreateUserModal(false)}>&times;</span>
-            <h2>Create New User</h2>
+            <h2>{t('subcreateusermit')}</h2>
             <form onSubmit={handleCreateUser}>
               <div className="input-group">
-                <label htmlFor="username">Username:</label>
+                <label htmlFor="username">{t('username')}:</label>
                 <input id="username" type="text" name="username" required />
               </div>
               <div className="input-group">
-                <label htmlFor="email">Email:</label>
+                <label htmlFor="email">{t('email')}:</label>
                 <input id="email" type="email" name="email" required />
               </div>
               <div className="input-group">
-                <label htmlFor="password">Password:</label>
+                <label htmlFor="password">{t('password')}:</label>
                 <input id="password" type="password" name="password" required />
               </div>
-              <button type="submit">Create User</button>
+              <button type="submit">{t('createuser')}</button>
             </form>
           </div>
         </div>
@@ -430,7 +493,7 @@ function App() {
         <div className="modal">
           <div className="modal-content">
             <span className="close" onClick={() => setShowLoginModal(false)}>&times;</span>
-            <h2>Login</h2>
+            <h2>{t('login')}</h2>
             <form onSubmit={(e) => {
               e.preventDefault();
               const username = e.target.username.value;
@@ -438,14 +501,14 @@ function App() {
               handleLogin(username, password);
             }}>
               <div className="input-group">
-                <label htmlFor="username">Username:</label>
+                <label htmlFor="username">{t('username  ')}:</label>
                 <input id="username" type="text" name="username" required />
               </div>
               <div className="input-group">
-                <label htmlFor="password">Password:</label>
+                <label htmlFor="password">{t('password')}:</label>
                 <input id="password" type="password" name="password" required />
               </div>
-              <button type="submit">Login</button>
+              <button type="submit">{t('login')}</button>
             </form>
           </div>
         </div>
@@ -492,24 +555,44 @@ function App() {
         <div className="modal">
           <div className="modal-content">
             <span className="close" onClick={toggleModal}>&times;</span>
-            <h2>Add Event</h2>
+            <h2>{t('addEventModalTitle')}</h2>
             <div className="input-group">
-              <label htmlFor="eventTitle">Title</label>
-              <input id="eventTitle" value={title} onChange={e => setTitle(e.target.value)} placeholder="Title" />
+              <label htmlFor="eventTitle">{t('title')}</label>
+              <input
+                id="eventTitle"
+                value={title}
+                onChange={e => setTitle(e.target.value)}
+                placeholder={t('title')}
+              />
             </div>
             <div className="input-group">
-              <label htmlFor="eventDescription">Description</label>
-              <input id="eventDescription" value={description} onChange={e => setDescription(e.target.value)} placeholder="Description" />
+              <label htmlFor="eventDescription">{t('description')}</label>
+              <input
+                id="eventDescription"
+                value={description}
+                onChange={e => setDescription(e.target.value)}
+                placeholder={t('description')}
+              />
             </div>
             <div className="input-group">
-              <label htmlFor="startTime">Start Time</label>
-              <input id="startTime" type="datetime-local" value={startTime} onChange={e => setStartTime(e.target.value)} />
+              <label htmlFor="startTime">{t('startTime')}</label>
+              <input
+                id="startTime"
+                type="datetime-local"
+                value={startTime}
+                onChange={e => setStartTime(e.target.value)}
+              />
             </div>
             <div className="input-group">
-              <label htmlFor="endTime">End Time</label>
-              <input id="endTime" type="datetime-local" value={endTime} onChange={e => setEndTime(e.target.value)} />
+              <label htmlFor="endTime">{t('endTime')}</label>
+              <input
+                id="endTime"
+                type="datetime-local"
+                value={endTime}
+                onChange={e => setEndTime(e.target.value)}
+              />
             </div>
-            <button onClick={handleAddEvent}>Save Event</button>
+            <button onClick={handleAddEvent}>{t('saveEvent')}</button>
           </div>
         </div>
       )}
@@ -517,4 +600,10 @@ function App() {
   );
 }
 
-export default App;
+export default function WrappedApp() {
+  return (
+    <LanguageProvider>
+      <App />
+    </LanguageProvider>
+  );
+}
