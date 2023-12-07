@@ -18,7 +18,7 @@ export function LoginModal({ setShowLoginModal, handleLogin, translations }) {
                     handleLogin(username, password);
                 }}>
                     <div className="input-group">
-                        <label htmlFor="username">{t_('username  ')}:</label>
+                        <label htmlFor="username">{t_('username')}:</label>
                         <input id="username" type="text" name="username" required />
                     </div>
                     <div className="input-group">

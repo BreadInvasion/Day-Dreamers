@@ -1,6 +1,10 @@
-import React from 'react';
+import React, { useContext } from 'react';
+import { LanguageContext } from '../LanguageContext';
 
-export function InfoBox({ activeUsername, selectedEvent, handleAddAttendee, handleRemoveAttendee, setShowEditEventModal, setAddAttendeeField }) {
+export function InfoBox({ activeUsername, selectedEvent, handleAddAttendee, handleRemoveAttendee, setShowEditEventModal, setAddAttendeeField, translations }) {
+    const { language } = useContext(LanguageContext);
+    const t_ = (key) => translations[language][key];
+    
     return (
         <div className='infoBox'>
             <p>
@@ -8,17 +12,17 @@ export function InfoBox({ activeUsername, selectedEvent, handleAddAttendee, hand
                 <br />
                 <i>{selectedEvent.description}</i>
                 <br />
-                <b>Host: </b>{selectedEvent.owner_username}
+                <b>{t_('hostLabel')} </b>{selectedEvent.owner_username}
                 <br />
-                <b>Attendees: </b>
+                <b>{t_('attendeeListLabel')} </b>
                 <br />
-                {selectedEvent.attendees.map(attendee => (<><p className="attendeeName" onClick={() => { handleRemoveAttendee(selectedEvent.event_id, attendee.id) }}>{attendee.username}</p> <br /></>))}
+                {selectedEvent.attendees.map(attendee => (<><p className={selectedEvent.owner_username === activeUsername || attendee.username === activeUsername ? "removableName" : "attendeeName"} onClick={() => { if (selectedEvent.owner_username === activeUsername || attendee.username === activeUsername) handleRemoveAttendee(selectedEvent.event_id, attendee.id) }}>{attendee.username}</p> <br /></>))}
             </p>
             {selectedEvent.owner_username === activeUsername &&
                 <>
-                    <button className="secondaryButton" onClick={() => { setShowEditEventModal(true) }}>Edit Event</button> <br />
-                    <input placeholder='Attendee' onChange={e => setAddAttendeeField(e.target.value)} /> <br />
-                    <button className="secondaryButton" onClick={() => { handleAddAttendee() }}>Add</button>
+                    <button className="editEventButton" onClick={() => { setShowEditEventModal(true) }}>{t_('editEvent')}</button> <br />
+                    <input className="attendeeInput" placeholder={t_('newAttendee')} onChange={e => setAddAttendeeField(e.target.value)} /> <br />
+                    <button className="attendeeButton" onClick={() => { handleAddAttendee() }}>{t_('addAttendeeButton')}</button>
                 </>}
         </div>
     )

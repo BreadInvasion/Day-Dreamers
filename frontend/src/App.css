@@ -80,9 +80,7 @@
 }
 
 .addButton {
-  position: absolute;
-  top: 20px;
-  right: 20px;
+  margin-top: 20px;
   padding: 10px 20px;
   background-color: #007bff;
   color: #ffffff;
@@ -92,12 +90,196 @@
   transition: background-color 0.3s;
 }
 
+.languageButton {
+  padding: 10px 20px;
+  background-color: transparent;
+  border: 1px solid grey;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.languageButton:hover {
+  background-color: rgba(0,0,0,0.15);
+}
+
+.buttonAbsolute {
+  position: absolute;
+  top: 10px;
+  right: 20px;
+}
+
+.splashTitle {
+  grid-area: title;
+  align-self: center;
+  justify-self: center;
+}
+
+.loginScreen {
+  height: 100vh;
+  display: grid;
+  grid-template-columns: auto;
+  grid-template-rows: auto auto;
+  grid-template-areas: "title" "main";
+  justify-content: center;
+  align-content: center;
+  gap: 50px;
+}
+
+.loginButtons {
+  grid-area: main;
+  justify-self: center;
+  align-self: center;
+  display: grid;
+  grid-template-columns: auto auto;
+  grid-template-rows: auto;
+  grid-template-areas: "create login";
+  justify-content: center;
+  align-content: center;
+  gap: 24px;
+}
+
+.mainScreen {
+  height: 100vh;
+  width: 100%;
+  display: grid;
+  grid-template-columns: 90% 10%;
+  grid-template-rows: auto auto;
+  grid-template-areas: "topbar topbar"
+                       "calendar sidebar";
+  gap: 0px;
+}
+
+.calendarWrapper {
+  grid-area: calendar;
+  width: 100%;
+  height: 85vh;
+  display: flex;
+  justify-content: center;
+}
+
+.topbarWrapper {
+  grid-area: topbar;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 20px 10px;
+}
+
+.topbarTitle {
+  font-size: 20px;
+}
+
+.topbarButtons {
+  display: flex;
+  width: 50%;
+  justify-content: end;
+  gap: 10px;
+}
+
+.sidebarWrapper {
+  width: 100%;
+  grid-area: sidebar;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  margin-right: 10px;
+}
+
+.createUserButton {
+  grid-area: "create";
+  justify-self: center;
+  align-self: center;
+  padding: 10px 20px;
+  background-color: #a5c8ef;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.createUserButton:hover {
+  background-color: #c9ddf5;
+}
+
+.createUserModalButton {
+  padding: 2px 4px;
+  background-color: #a5c8ef;
+  border: none;
+  border-radius: 2px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.createUserModalButton:hover {
+  background-color: #c9ddf5;
+}
+
+.editEventButton {
+  padding: 2px 4px;
+  background-color: #007bff;
+  color: #ffffff;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.editEventButton:hover {
+  background-color: #0056b3;
+}
+
+.loginButton {
+  grid-area: "login";
+  justify-self: center;
+  align-self: center;
+  padding: 10px 20px;
+  background-color: #007bff;
+  color: #ffffff;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.loginButton:hover {
+  background-color: #0056b3;
+}
+
+.logoutButton {
+  padding: 10px 20px;
+  background-color: #a62632;
+  color: #ffffff;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.logoutButton:hover {
+  background-color: #61161d;
+}
+
+.newUserButton:hover {
+  background-color: #0e4178;
+}
+
 .addButton:hover {
   background-color: #0056b3;
 }
 
 .rbc-calendar {
-  margin-right: 150px;
+  height: 100% !important;
+  width: 100% !important;
+}
+
+.rbc-time-slot {
+  width: 82px !important;
+}
+
+.rbc-time-header-gutter {
+  width: 82px !important;
 }
 
 .modal-content h2 {
@@ -111,24 +293,22 @@
 }
 
 .infoBox {
-  margin-top: 80px;
-  position: absolute;
-  top: 20px;
-  right: 20px;
+  margin-top: 20px;
   width: 120px;
 }
 
-.attendeeName:hover {
+.removableName {
+  transition: color 0.3s;
+}
+
+.removableName:hover {
   color: red;
 }
 
 .deleteButton {
-  margin-top: 40px;
-  position: absolute;
-  top: 20px;
-  right: 20px;
+  margin-top: 20px;
   padding: 10px 20px;
-  background-color: #dc3545;
+  background-color: #a62632;
   color: #ffffff;
   border: none;
   border-radius: 4px;
@@ -137,10 +317,30 @@
 }
 
 .deleteButton:hover {
-  background-color: #c82333;
+  background-color: #61161d;
 }
 
 
 .rbc-addons-dnd-draggable {
   cursor: move;
+}
+
+.attendeeInput {
+  margin-top: 10px;
+  width: 80%;
+}
+
+.attendeeButton {
+  margin-top: 10px;
+  padding: 2px 4px;
+  background-color: #007bff;
+  color: #ffffff;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.attendeeButton:hover {
+  background-color: #0056b3;
 }

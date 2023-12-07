@@ -10,6 +10,7 @@ services:
     environment:
       - db_url=postgresql://dev_admin:dev@database:5432/daydreamers_dev
       - pass_key=THISISATESTKEYDONOTUSETHISINPROD
+      - is_ipv6=false
     volumes:
       - ./backend:/app
 
