@@ -384,9 +384,9 @@ function App() {
       </button>
 
       {/*User Login component*/}
-      <button className='secondaryButton' onClick={() => setShowCreateUserModal(true)}>Create New User</button>
-      <button onClick={() => setShowLoginModal(true)}>Login</button>
-      <button onClick={handleLogout}>Logout</button>
+      <button className='secondaryButton' onClick={() => setShowCreateUserModal(true)}>{t_('createuser')}</button>
+      <button onClick={() => setShowLoginModal(true)}>{t_('login')}</button>
+      <button onClick={handleLogout}>{t_('logout')}</button>
 
       {/* Modal for creating a new user */}
       {showCreateUserModal && <CreateUserModal
