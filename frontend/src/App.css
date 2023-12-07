@@ -299,6 +299,7 @@
 
 .removableName {
   transition: color 0.3s;
+  cursor: pointer;
 }
 
 .removableName:hover {

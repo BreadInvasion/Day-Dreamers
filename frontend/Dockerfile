@@ -5,6 +5,8 @@ ENV PATH /app/node_modules/.bin:$PATH
 COPY package.json  ./
 COPY ./src ./src
 COPY ./public ./public
+COPY index.html ./
+COPY vite.config.ts ./
 RUN npm install
 RUN npm run build
 
