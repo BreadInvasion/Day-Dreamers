@@ -29,7 +29,7 @@ export function CreateUserModal({ setShowCreateUserModal, handleCreateUser, tran
                         <label htmlFor="password">{t_('password')}:</label>
                         <input id="password" type="password" name="password" required />
                     </div>
-                    <button type="submit">{t_('createuser')}</button>
+                    <button className='createUserModalButton' type="submit">{t_('createuser')}</button>
                 </form>
             </div>
         </div>
